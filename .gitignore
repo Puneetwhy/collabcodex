@@ -1,0 +1,28 @@
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Vite
+dist
+dist-ssr
+*.local
+
+# Env
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Docker
+docker-compose.override.yml
+
+# Mongo/Redis data
+mongo-data/
+redis-data/
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
