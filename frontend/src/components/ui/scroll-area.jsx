@@ -1,7 +1,7 @@
 // frontend/src/components/ui/scroll-area.jsx
 import * as React from "react"
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
-import { cn } from "../../lib/utils/utils.js"
+import { cn } from "../../lib/utils"
 
 /* -------------------------------------------------------------------------- */
 /*                                   Root                                     */

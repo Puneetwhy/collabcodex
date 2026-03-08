@@ -35,6 +35,7 @@ const VersionHistory = ({ projectId, open, onOpenChange }) => {
   const [rollbackVersion, { isLoading: rollingBack }] = useRollbackVersionMutation();
   const [selectedVersion, setSelectedVersion] = useState(null);
 
+  // Sort versions newest first
   const sortedVersions = useMemo(
     () => [...versions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
     [versions]
@@ -58,7 +59,6 @@ const VersionHistory = ({ projectId, open, onOpenChange }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl h-[92vh] flex flex-col p-0 overflow-hidden rounded-2xl">
-        
         {/* HEADER */}
         <DialogHeader className="px-8 pt-8 pb-5 border-b bg-muted/30 backdrop-blur">
           <DialogTitle className="text-2xl font-semibold flex items-center gap-3">
@@ -99,14 +99,10 @@ const VersionHistory = ({ projectId, open, onOpenChange }) => {
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-start gap-3">
-                          <div className="mt-1">
-                            <GitCommit size={16} className="text-muted-foreground" />
-                          </div>
+                          <GitCommit size={16} className="text-muted-foreground mt-1" />
                           <div>
                             <div className="flex items-center gap-2">
-                              <p className="font-semibold text-sm">
-                                Version {version.versionNumber}
-                              </p>
+                              <p className="font-semibold text-sm">Version {version.versionNumber}</p>
                               {version.versionNumber === latestVersionNumber && (
                                 <Badge variant="default" className="text-xs">Latest</Badge>
                               )}

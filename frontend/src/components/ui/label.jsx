@@ -1,6 +1,6 @@
 import * as React from "react"
 import { cva } from "class-variance-authority"
-import { cn } from "../../lib/utils/utils.js"
+import { cn } from "../../lib/utils"
 
 const labelVariants = cva(
   "text-sm font-medium leading-none tracking-tight text-neutral-800",

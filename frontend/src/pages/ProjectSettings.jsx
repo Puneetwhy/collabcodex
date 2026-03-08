@@ -15,31 +15,10 @@ import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Label } from '@/components/ui/label';
-import { Plus, Trash2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -54,31 +33,21 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import Header from '@/components/common/Header';
+import { Mail, Trash2 } from 'lucide-react';
 
 const ProjectSettings = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
 
-  const { data: project, isLoading: projectLoading } =
-    useGetProjectQuery(projectId);
-  const [updateProject, { isLoading: updating }] =
-    useUpdateProjectMutation();
-  const [deleteProject, { isLoading: deleting }] =
-    useDeleteProjectMutation();
-  const [inviteToProject, { isLoading: inviting }] =
-    useInviteToProjectMutation();
-
-  const { data: members = [], isLoading: membersLoading } =
-    useGetMembersQuery(projectId);
+  const { data: project, isLoading: projectLoading } = useGetProjectQuery(projectId);
+  const [updateProject, { isLoading: updating }] = useUpdateProjectMutation();
+  const [deleteProject, { isLoading: deleting }] = useDeleteProjectMutation();
+  const [inviteToProject, { isLoading: inviting }] = useInviteToProjectMutation();
+  const { data: members = [], isLoading: membersLoading } = useGetMembersQuery(projectId);
   const [updateMemberRole] = useUpdateMemberRoleMutation();
   const [removeMember] = useRemoveMemberMutation();
 
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    visibility: 'private',
-  });
-
+  const [formData, setFormData] = useState({ name: '', description: '', visibility: 'private' });
   const [inviteEmail, setInviteEmail] = useState('');
 
   useEffect(() => {
@@ -107,10 +76,7 @@ const ProjectSettings = () => {
       toast.success('Invitation sent');
       setInviteEmail('');
     } catch (err) {
-      toast.error(
-        'Failed to send invite: ' +
-          (err?.data?.message || 'User not found')
-      );
+      toast.error('Failed to send invite: ' + (err?.data?.message || 'User not found'));
     }
   };
 
@@ -157,11 +123,58 @@ const ProjectSettings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[24px_24px]">
       <Header projectName={project?.name} />
 
       <main className="container mx-auto px-4 py-8 max-w-5xl space-y-8">
         <h1 className="text-3xl font-bold mb-8">Project Settings</h1>
+
+        {/* Project Details Edit */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Project Details</CardTitle>
+            <CardDescription>Edit project name, description, and visibility</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="project-name">Project Name</Label>
+              <Input
+                id="project-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="project-description">Description</Label>
+              <Textarea
+                id="project-description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="project-visibility">Visibility</Label>
+              <Select
+                value={formData.visibility}
+                onValueChange={(val) => setFormData({ ...formData, visibility: val })}
+              >
+                <SelectTrigger id="project-visibility" className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="private">Private</SelectItem>
+                  <SelectItem value="public">Public</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button onClick={handleSaveDetails} disabled={updating} className="mt-4">
+              {updating ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Members Section */}
         <Card className="mb-8">
@@ -169,7 +182,6 @@ const ProjectSettings = () => {
             <CardTitle>Members</CardTitle>
             <CardDescription>Manage who can access this project</CardDescription>
           </CardHeader>
-
           <CardContent>
             <div className="flex mb-4 gap-2">
               <Input
@@ -177,11 +189,7 @@ const ProjectSettings = () => {
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
               />
-              <Button
-                onClick={handleInvite}
-                disabled={inviting || !inviteEmail.trim()}
-                className="flex items-center gap-2"
-              >
+              <Button onClick={handleInvite} disabled={inviting || !inviteEmail.trim()} className="flex items-center gap-2">
                 <Mail size={16} />
                 Invite
               </Button>
@@ -196,33 +204,26 @@ const ProjectSettings = () => {
                   <TableHead />
                 </TableRow>
               </TableHeader>
-
               <TableBody>
                 {members.map((member) => (
                   <TableRow key={member._id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={member.user?.avatar} />
-                          <AvatarFallback>
-                            {member.user?.username?.[0] || 'U'}
-                          </AvatarFallback>
+                          <AvatarImage src={member.user?.avatar || ''} />
+                          <AvatarFallback>{member.user?.username?.[0] || 'U'}</AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="font-medium">{member.user?.username}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {member.user?.email}
-                          </p>
+                          <p className="text-sm text-muted-foreground">{member.user?.email}</p>
                         </div>
                       </div>
                     </TableCell>
 
                     <TableCell>
                       <Select
-                        value={member.role} // ✅ controlled value fixed
-                        onValueChange={(val) =>
-                          handleRoleChange(member._id, val)
-                        }
+                        value={member.role}
+                        onValueChange={(val) => handleRoleChange(member._id, val)}
                         disabled={member.role === 'owner'}
                       >
                         <SelectTrigger className="w-32">
@@ -237,18 +238,12 @@ const ProjectSettings = () => {
                     </TableCell>
 
                     <TableCell className="text-sm text-muted-foreground">
-                      {member.joinedAt
-                        ? format(new Date(member.joinedAt), 'MMM d, yyyy')
-                        : '-'}
+                      {member.joinedAt ? format(new Date(member.joinedAt), 'MMM d, yyyy') : '-'}
                     </TableCell>
 
                     <TableCell className="text-right">
                       {member.role !== 'owner' && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveMember(member._id)}
-                        >
+                        <Button variant="ghost" size="icon" onClick={() => handleRemoveMember(member._id)}>
                           <Trash2 size={16} className="text-destructive" />
                         </Button>
                       )}
@@ -265,28 +260,19 @@ const ProjectSettings = () => {
           <CardHeader>
             <CardTitle className="text-destructive">Danger Zone</CardTitle>
           </CardHeader>
-
           <CardContent>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive">Delete Project</Button>
               </AlertDialogTrigger>
-
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Project?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone.
-                  </AlertDialogDescription>
+                  <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
                 </AlertDialogHeader>
-
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className="bg-destructive hover:bg-destructive/90"
-                  >
+                  <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive hover:bg-destructive/90">
                     {deleting ? 'Deleting...' : 'Delete Permanently'}
                   </AlertDialogAction>
                 </AlertDialogFooter>

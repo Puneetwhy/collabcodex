@@ -73,46 +73,45 @@ const Home = () => {
       
       {/* Hero Section */}
       <section className="relative py-16 sm:py-20 md:py-32">
-        <div className="container mx-auto px-4 sm:px-6 text-center">
+  <div className="container mx-auto px-4 sm:px-6 text-center">
 
-          <div className="inline-flex items-center rounded-full p-[1px] bg-gradient-to-r from-indigo-500 via-pink-500 to-cyan-500 shadow-sm mb-6">
+    <div className="inline-flex items-center rounded-full p-[1px] bg-gradient-to-r from-indigo-500 via-pink-500 to-cyan-500 shadow-sm mb-6">
 
-          <div className="inline-flex items-center rounded-full px-4 py-1.5 text-xs sm:text-sm font-medium bg-white/90 text-primary">
-            <span className="mr-2">New in 2026</span> • Secure Docker IDE in your browser
-          </div>
+      <div className="inline-flex items-center rounded-full px-4 py-1.5 text-xs sm:text-sm font-medium bg-white/90 text-primary">
+        <span className="mr-2">New in 2026</span> • Secure Docker IDE in your browser
+      </div>
 
-          </div>
+    </div>
 
-          <div className='mb-14'>
-           <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold -tracking-normal leading-tight">
-            Collab <span className="text-cyan-700">Code</span>
-            <span className="text-amber-800 text-4xl sm:text-6xl md:text-7xl lg:text-8xl">X</span>
-          </h1>
+    <div className='mb-14'>
+      <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold -tracking-normal leading-tight">
+        Collab <span className="text-cyan-700">Code</span>
+        <span className="text-amber-800 text-4xl sm:text-6xl md:text-7xl lg:text-8xl">X</span>
+      </h1>
 
-            <span className="from-primary md:text-xl lg:text-2xl sm:text-xl font-semibold">
-              Real-Time <span className='text-red-700'>Collaborative</span> Cloud IDE
-            </span>
-          </div>
+      <span className="from-primary md:text-xl lg:text-2xl sm:text-xl font-semibold">
+        Real-Time <span className='text-red-700'>Collaborative</span> Cloud IDE
+      </span>
+    </div>
 
-          <p className="text-base md:text-xl text-gray-700 text-shadow-gray-600 font-light text-muted-foreground max-w-3xl mx-auto mb-16 px-2">
-            VS Code experience in browser. No installs. Isolated Docker execution. Git-PR workflow. AI assistance. Team coding without breaking Main — ever.
-          </p>
+    <p className="text-base md:text-xl text-gray-700 text-shadow-gray-600 font-light text-muted-foreground max-w-3xl mx-auto mb-16 px-2">
+      VS Code experience in browser. No installs. Isolated Docker execution. Git-PR workflow. AI assistance. Team coding without breaking Main — ever.
+    </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" className="h-12 sm:h-14 px-8 sm:px-10 text-base sm:text-lg w-full sm:w-auto" asChild>
-              <Link to="/signup">Get Started — It's Free</Link>
-            </Button>
-            <Button size="lg" variant="outline" className="h-12 sm:h-14 px-8 sm:px-10 text-base sm:text-lg w-full sm:w-auto" asChild>
-              <Link to="/login">Log In</Link>
-            </Button>
-          </div>
+    <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+      <Button size="lg" className="h-12 sm:h-14 px-8 sm:px-10 text-base sm:text-lg w-full sm:w-auto" asChild>
+        <Link to="/signup">Get Started — It's Free</Link>
+      </Button>
+      <Button size="lg" variant="outline" className="h-12 sm:h-14 px-8 sm:px-10 text-base sm:text-lg w-full sm:w-auto" asChild>
+        <Link to="/login">Log In</Link>
+      </Button>
+    </div>
 
-          <p className="text-xs sm:text-sm text-muted-foreground mt-6">
-            No credit card required • Full MERN/Python/Java support • 512MB/0.5 CPU sandbox
-          </p>
-        </div>
-      </section>
-
+    <p className="text-xs sm:text-sm text-muted-foreground mt-6">
+      No credit card required • Full MERN/Python/Java support • 512MB/0.5 CPU sandbox
+    </p>
+  </div>
+</section>
       {/* Features */}
       <section className="py-10 sm:py-8">
         <div className="container mx-auto px-4 sm:px-6">

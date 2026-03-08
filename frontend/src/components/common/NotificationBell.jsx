@@ -17,7 +17,7 @@ import {
   useMarkAsReadMutation,
 } from '@/features/notifications/notificationApi';
 import { formatDistanceToNow } from 'date-fns';
-import { cn } from "../../lib/utils/utils.js";
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const NotificationBell = () => {
@@ -25,7 +25,9 @@ const NotificationBell = () => {
 
   // Fetch notifications
   const { data, isLoading } = useGetNotificationsQuery();
-  const notifications = Array.isArray(data) ? data : data?.notifications ?? [];
+  const notifications = Array.isArray(data)
+    ? data
+    : data?.notifications ?? [];
 
   const [markAsRead] = useMarkAsReadMutation();
 
@@ -41,7 +43,7 @@ const NotificationBell = () => {
 
     const handleNotif = (newNotif) => {
       toast.info(newNotif.message, { description: 'New notification' });
-      // Optional: refetch notifications here if needed
+      // Optional: refetch notifications if your API supports it
     };
 
     socket.on('notification', handleNotif);

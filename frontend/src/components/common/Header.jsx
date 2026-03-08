@@ -35,7 +35,7 @@ const Header = ({ projectName = '' }) => {
 
           {/* Project Name */}
           {isProjectPage && projectName && (
-            <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
               <span className="text-muted-foreground text-sm hidden sm:inline">/</span>
               <span className="font-medium text-sm sm:text-base truncate max-w-[140px] sm:max-w-[220px] lg:max-w-[320px]">
                 {projectName}
@@ -72,7 +72,7 @@ const Header = ({ projectName = '' }) => {
               variant="ghost"
               size="sm"
               onClick={logout}
-              className="gap-2 rounded-xl hover:bg-muted transition-colors"
+              className="gap-2 rounded-xl hover:bg-muted transition-colors flex items-center"
             >
               <LogOut size={16} />
               <span className="hidden sm:inline text-sm">Logout</span>

@@ -10,7 +10,6 @@ const LANGUAGE_IMAGES = {
   nodejs: 'node:22-alpine',
   python: 'python:3.12-slim',
   java: 'openjdk:21-slim',
-  // Add more later (e.g. 'go', 'rust')
   other: 'ubuntu:24.04', // fallback
 };
 
@@ -24,9 +23,6 @@ const DEFAULT_LIMITS = {
 class DockerService {
   /**
    * Get or create persistent container for a project
-   * @param {string} projectId 
-   * @param {string} language 
-   * @returns {Promise<Docker.Container>}
    */
   async getOrCreateProjectContainer(projectId, language = 'javascript') {
     const containerName = `${CONTAINER_PREFIX}${projectId}`;
@@ -78,8 +74,7 @@ class DockerService {
         NanoCpus: DEFAULT_LIMITS.NanoCpus,
         CpuPeriod: DEFAULT_LIMITS.CpuPeriod,
         CpuQuota: DEFAULT_LIMITS.CpuQuota,
-        // Security: drop capabilities, no privileged
-        CapDrop: ['ALL'],
+        CapDrop: ['ALL'], // security: drop all capabilities
         SecurityOpt: ['no-new-privileges'],
       },
       Labels: {
@@ -89,7 +84,7 @@ class DockerService {
 
     await container.start();
 
-    // Optional: exec initial setup (e.g. npm init -y for node)
+    // Initial setup (e.g. npm init for node)
     if (language === 'javascript' || language === 'nodejs') {
       await this.execInContainer(container, ['npm', 'init', '-y'], true);
     }
@@ -98,7 +93,7 @@ class DockerService {
   }
 
   /**
-   * Execute command in container (non-interactive for run)
+   * Execute command in container
    */
   async execInContainer(container, cmd, detach = false) {
     const exec = await container.exec({
@@ -119,7 +114,7 @@ class DockerService {
   }
 
   /**
-   * Kill and remove container + volume (cleanup)
+   * Cleanup container + volume for project
    */
   async cleanupProject(projectId) {
     const containerName = `${CONTAINER_PREFIX}${projectId}`;
@@ -142,7 +137,7 @@ class DockerService {
   }
 
   /**
-   * Restart container (e.g. after language change)
+   * Restart container (language change, restart button)
    */
   async restartContainer(projectId, newLanguage) {
     await this.cleanupProject(projectId);
@@ -150,7 +145,7 @@ class DockerService {
   }
 
   /**
-   * List running CollabCodeX containers (health/debug)
+   * List all CollabCodeX containers (debug)
    */
   async listProjectContainers() {
     const containers = await docker.listContainers({

@@ -23,7 +23,7 @@ const PushReviewCard = ({ mergeRequest, projectId, onClose }) => {
       toast.success('Changes merged successfully');
       onClose?.();
     } catch (err) {
-      toast.error('Failed to merge: ' + err.data?.message || err.message);
+      toast.error('Failed to merge: ' + (err.data?.message || err.message));
     }
   };
 
@@ -33,7 +33,7 @@ const PushReviewCard = ({ mergeRequest, projectId, onClose }) => {
       toast.success('Push rejected');
       onClose?.();
     } catch (err) {
-      toast.error('Failed to reject: ' + err.data?.message || err.message);
+      toast.error('Failed to reject: ' + (err.data?.message || err.message));
     }
   };
 
@@ -44,15 +44,13 @@ const PushReviewCard = ({ mergeRequest, projectId, onClose }) => {
 
   return (
     <Card className="h-full flex flex-col overflow-hidden border border-border/60 shadow-lg rounded-2xl bg-background">
-      
       {/* HEADER */}
       <CardHeader className="pb-4 border-b bg-muted/30 backdrop-blur">
         <div className="flex items-start justify-between gap-4">
-          
           <div className="flex items-start gap-3">
             <Avatar className="h-9 w-9">
               <AvatarImage src={mergeRequest.author?.avatar} />
-              <AvatarFallback>{mergeRequest.author?.username?.[0]}</AvatarFallback>
+              <AvatarFallback>{mergeRequest.author?.username?.[0] || '?'}</AvatarFallback>
             </Avatar>
 
             <div>
@@ -62,7 +60,7 @@ const PushReviewCard = ({ mergeRequest, projectId, onClose }) => {
 
               <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
                 <span>Proposed by</span>
-                <span className="font-medium text-foreground">{mergeRequest.author?.username}</span>
+                <span className="font-medium text-foreground">{mergeRequest.author?.username || 'Unknown'}</span>
                 <span>•</span>
                 <span>{mergeRequest.filesChanged?.length || 0} files changed</span>
               </div>
@@ -106,7 +104,6 @@ const PushReviewCard = ({ mergeRequest, projectId, onClose }) => {
 
       {/* FOOTER */}
       <CardFooter className="border-t px-6 py-4 bg-muted/20 flex justify-between items-center">
-        
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <MessageSquare size={14} />
           <span>Inline comments coming soon</span>

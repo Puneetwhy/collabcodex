@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { cn } from '../../lib/utils/utils.js';
+import { cn } from '../../lib/utils';
 import { useSocket } from '@/hooks/useSocket';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
@@ -19,28 +19,26 @@ const ProjectChat = ({ projectId }) => {
   const { socket, isConnected } = useSocket();
   const { user } = useAuth();
 
-  // Join project chat and listen for updates
+  // Join project chat and setup listeners
   useEffect(() => {
     if (!socket || !isConnected || !projectId) return;
 
     socket.emit('join-project', { projectId });
 
-    socket.on('chat-history', (history) => {
-      setMessages(history);
-    });
-
-    socket.on('chat-message', (message) => {
-      setMessages((prev) => [...prev, message]);
-    });
-
-    socket.on('user-typing', ({ userId, isTyping }) => {
+    const handleHistory = (history) => setMessages(history);
+    const handleMessage = (message) => setMessages((prev) => [...prev, message]);
+    const handleTyping = ({ userId, isTyping }) => {
       if (userId !== user?._id) setIsTyping(isTyping);
-    });
+    };
+
+    socket.on('chat-history', handleHistory);
+    socket.on('chat-message', handleMessage);
+    socket.on('user-typing', handleTyping);
 
     return () => {
-      socket.off('chat-history');
-      socket.off('chat-message');
-      socket.off('user-typing');
+      socket.off('chat-history', handleHistory);
+      socket.off('chat-message', handleMessage);
+      socket.off('user-typing', handleTyping);
     };
   }, [socket, isConnected, projectId, user]);
 
@@ -54,14 +52,15 @@ const ProjectChat = ({ projectId }) => {
   const handleSend = () => {
     if (!input.trim() || !socket) return;
 
+    const content = input.trim();
     const message = {
       project: projectId,
       user: user._id,
-      content: input.trim(),
+      content,
       type: 'user',
     };
 
-    socket.emit('send-chat', { projectId, content: input.trim() });
+    socket.emit('send-chat', { projectId, content });
     setInput('');
   };
 
@@ -79,16 +78,13 @@ const ProjectChat = ({ projectId }) => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-background border-l border-border">
+    <div className="flex flex-col h-full w-full bg-background border border-border">
       {/* Header */}
-      <div className="px-4 sm:px-6 py-4 border-b border-border bg-background/80 backdrop-blur sticky top-0 z-10">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="font-semibold text-base sm:text-lg flex items-center gap-2 tracking-tight">
-            <Smile size={18} className="text-primary" /> Project Chat
+      <div className="px-3 sm:px-3 py-4 border-b border-border bg-background/80 backdrop-blur sticky top-0 z-10">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="font-semibold text-base sm:text-lg flex items-center gap-1 tracking-tight">
+            <Smile size={18} className="text-primary text-amber-600 " /> Project Chat
           </h3>
-          <span className="hidden sm:block text-xs text-muted-foreground">
-            Real-time team discussion
-          </span>
         </div>
       </div>
 
@@ -96,7 +92,7 @@ const ProjectChat = ({ projectId }) => {
       <ScrollArea className="flex-1 px-4 sm:px-6 py-6" ref={scrollRef}>
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center">
-            <Smile size={44} className="mb-4 opacity-40" />
+            <Smile size={44} className="mb-4 opacity-40 text-amber-500" />
             <p className="text-sm">No messages yet</p>
             <p className="text-xs mt-2">Start the conversation 🚀</p>
           </div>
@@ -120,8 +116,11 @@ const ProjectChat = ({ projectId }) => {
                   >
                     {/* Avatar */}
                     <Avatar className="h-8 w-8 shrink-0">
-                      <AvatarImage src={msg.user?.avatar} />
-                      <AvatarFallback>{msg.user?.username?.[0] || '?'}</AvatarFallback>
+                      {msg.user?.avatar ? (
+                        <AvatarImage src={msg.user.avatar} />
+                      ) : (
+                        <AvatarFallback>{msg.user?.username?.[0] || '?'}</AvatarFallback>
+                      )}
                     </Avatar>
 
                     {/* Message Bubble */}
@@ -135,9 +134,8 @@ const ProjectChat = ({ projectId }) => {
                     >
                       <div className="flex items-center gap-2 mb-1 text-xs opacity-80">
                         <span className="font-medium text-foreground">{msg.user?.username || 'Anonymous'}</span>
-                        <span className="opacity-60">{format(new Date(msg.createdAt), 'HH:mm')}</span>
+                        <span className="opacity-60">{msg.createdAt ? format(new Date(msg.createdAt), 'HH:mm') : ''}</span>
                       </div>
-
                       <p className="whitespace-pre-wrap">{msg.content}</p>
                     </div>
                   </div>
@@ -173,7 +171,6 @@ const ProjectChat = ({ projectId }) => {
             <Send size={16} />
           </Button>
         </div>
-
         <p className="text-[10px] sm:text-xs text-muted-foreground mt-3 text-center">
           @username to mention • Messages are persistent
         </p>

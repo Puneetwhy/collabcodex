@@ -19,6 +19,13 @@ const terminalRoutes = require('./src/routes/terminalRoutes');
 const notificationRoutes = require('./src/routes/notificationRoutes');
 const collaborationRoutes = require('./src/routes/collaborationRoutes');
 
+
+console.log('Loaded env variables:');
+console.log('PORT:', process.env.PORT);
+console.log('MONGO_URI:', process.env.MONGO_URI ? 'present' : 'MISSING');
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'present (length ' + process.env.JWT_SECRET.length + ')' : 'MISSING');
+console.log('GROQ_API_KEY:', process.env.GROQ_API_KEY ? 'present' : 'MISSING');
+
 const app = express();
 const server = http.createServer(app);
 

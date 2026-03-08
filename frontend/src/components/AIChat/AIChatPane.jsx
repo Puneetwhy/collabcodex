@@ -1,21 +1,19 @@
-// frontend/src/components/AIChat/AIChatPane.jsx
 import { useState, useRef, useEffect } from 'react';
 import { Send, Code, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '../ui/scroll-area.jsx';
-import { cn } from '../../lib/utils/utils.js';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 import { useTheme } from '@/hooks/useTheme';
+import { toast } from 'sonner';
 
-// Backend AI endpoint
-const AI_ENDPOINT = '/api/ai/chat';
+const AI_ENDPOINT = '/api/ai/chat'; // Vite proxy → localhost:5000
 
 const AIChatPane = ({ selectedCode = '', onInsertCode }) => {
   const [messages, setMessages] = useState([
     {
       role: 'system',
-      content:
-        'You are an expert coding assistant in CollabCodeX. Be concise, helpful, and accurate.',
+      content: 'You are an expert coding assistant in CollabCodeX. Be concise, helpful, and accurate.',
     },
   ]);
   const [input, setInput] = useState('');
@@ -25,12 +23,13 @@ const AIChatPane = ({ selectedCode = '', onInsertCode }) => {
   const scrollRef = useRef(null);
   const { theme } = useTheme();
 
-  // Auto-scroll on new messages
-  useEffect(() => {
+  const scrollToBottom = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  };
+
+  useEffect(() => scrollToBottom(), [messages]);
 
   const handleSend = async () => {
     if (!input.trim() && !selectedCode.trim()) return;
@@ -46,27 +45,32 @@ const AIChatPane = ({ selectedCode = '', onInsertCode }) => {
     setError(null);
 
     try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Not logged in');
+
       const response = await fetch(AI_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           messages: newMessages,
           model: 'llama3-70b-8192',
-          stream: true,
         }),
       });
 
-      if (!response.ok) throw new Error('AI request failed');
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || `HTTP ${response.status}`);
+      }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let aiResponse = '';
 
-      // Placeholder assistant message
-      setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
+      const assistantMsg = { role: 'assistant', content: '' };
+      setMessages(prev => [...prev, assistantMsg]);
 
       while (true) {
         const { done, value } = await reader.read();
@@ -79,26 +83,30 @@ const AIChatPane = ({ selectedCode = '', onInsertCode }) => {
           if (line.startsWith('data: ')) {
             const data = line.replace('data: ', '');
             if (data === '[DONE]') continue;
+
             try {
               const parsed = JSON.parse(data);
               const token = parsed.choices?.[0]?.delta?.content || '';
-              aiResponse += token;
-
-              // Update last message live
-              setMessages((prev) => {
-                const updated = [...prev];
-                updated[updated.length - 1].content = aiResponse;
-                return updated;
-              });
+              if (token) {
+                aiResponse += token;
+                setMessages(prev => {
+                  const updated = [...prev];
+                  updated[updated.length - 1].content = aiResponse;
+                  return updated;
+                });
+                scrollToBottom();
+              }
             } catch {}
           }
         }
       }
 
       setIsLoading(false);
+      scrollToBottom();
     } catch (err) {
-      setError(err.message || 'Failed to get AI response');
+      setError(err.message || 'Failed to connect to AI');
       setIsLoading(false);
+      toast.error(err.message);
     }
   };
 
@@ -110,25 +118,7 @@ const AIChatPane = ({ selectedCode = '', onInsertCode }) => {
   ];
 
   return (
-    <div className="flex flex-col h-full w-full bg-background border-l border-border">
-      {/* Header */}
-      <div className="px-4 sm:px-6 py-4 border-b border-border bg-background/80 backdrop-blur sticky top-0 z-10">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h3 className="font-semibold text-base sm:text-lg tracking-tight">
-              AI Assistant
-            </h3>
-            <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
-              Smart coding help inside your workspace
-            </p>
-          </div>
-          <span className="hidden sm:inline-flex text-[11px] px-2.5 py-1 rounded-full bg-muted text-muted-foreground font-medium whitespace-nowrap">
-            Groq / OpenAI
-          </span>
-        </div>
-      </div>
-
-      {/* Messages */}
+    <div className="flex flex-col h-full w-full bg-background border-border">
       <ScrollArea ref={scrollRef} className="flex-1 px-4 sm:px-6 py-5">
         <div className="space-y-5 sm:space-y-6">
           {messages.slice(1).map((msg, idx) => (
@@ -175,7 +165,6 @@ const AIChatPane = ({ selectedCode = '', onInsertCode }) => {
         </div>
       </ScrollArea>
 
-      {/* Quick Actions */}
       <div className="px-4 sm:px-6 py-3 border-t border-border bg-background">
         <div className="flex gap-2 overflow-x-auto no-scrollbar">
           {quickActions.map((action) => (
@@ -185,8 +174,11 @@ const AIChatPane = ({ selectedCode = '', onInsertCode }) => {
               size="sm"
               className="gap-1.5 rounded-full text-xs font-medium shadow-sm whitespace-nowrap"
               onClick={() => {
-                setInput(action.prompt);
-                if (selectedCode.trim()) handleSend();
+                const prompt = selectedCode.trim()
+                  ? `${action.prompt}\n\n\`\`\`\n${selectedCode}\n\`\`\``
+                  : action.prompt;
+                setInput(prompt);
+                setTimeout(handleSend, 0);
               }}
               disabled={isLoading}
             >
@@ -196,7 +188,6 @@ const AIChatPane = ({ selectedCode = '', onInsertCode }) => {
         </div>
       </div>
 
-      {/* Input */}
       <div className="px-4 sm:px-6 py-4 border-t border-border bg-background">
         <form
           onSubmit={(e) => {
@@ -212,7 +203,6 @@ const AIChatPane = ({ selectedCode = '', onInsertCode }) => {
             disabled={isLoading}
             className="flex-1 rounded-full px-4 py-2 text-sm shadow-sm"
           />
-
           <Button
             type="submit"
             disabled={isLoading || (!input.trim() && !selectedCode.trim())}
@@ -221,7 +211,6 @@ const AIChatPane = ({ selectedCode = '', onInsertCode }) => {
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send size={16} />}
           </Button>
         </form>
-
         <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-3 text-center">
           Selected code is automatically included
         </p>

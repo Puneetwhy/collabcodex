@@ -17,7 +17,7 @@ class GlobalErrorBoundary extends Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('Global Error Boundary caught:', error, errorInfo);
-    // Optional: send to Sentry / other logging service
+    // Optional: integrate with Sentry or other logging service
   }
 
   render() {
@@ -40,7 +40,6 @@ class GlobalErrorBoundary extends Component {
                   <CardTitle className="text-xl sm:text-2xl font-semibold tracking-tight">
                     Something went wrong
                   </CardTitle>
-
                   <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                     An unexpected error occurred. You can reload the page or safely return to your dashboard.
                   </p>
@@ -48,22 +47,22 @@ class GlobalErrorBoundary extends Component {
               </CardHeader>
 
               <CardContent className="space-y-6 pb-10">
-                {/* Technical error box */}
+                {/* Technical error details */}
                 <div className="text-xs sm:text-sm font-mono bg-muted/60 border border-border rounded-xl p-4 max-h-44 overflow-auto text-muted-foreground">
                   {this.state.error?.message || 'Unknown error'}
                 </div>
 
-                {/* Actions */}
+                {/* Action buttons */}
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button
                     onClick={() => window.location.reload()}
-                    className="w-full sm:flex-1"
+                    className="w-full sm:flex-1 flex items-center justify-center gap-2"
                   >
-                    <RefreshCw className="mr-2 h-4 w-4" />
+                    <RefreshCw className="h-4 w-4" />
                     Reload Page
                   </Button>
 
-                  <Button variant="outline" asChild className="w-full sm:flex-1">
+                  <Button variant="outline" asChild className="w-full sm:flex-1 text-center">
                     <Link to="/dashboard">Back to Dashboard</Link>
                   </Button>
                 </div>

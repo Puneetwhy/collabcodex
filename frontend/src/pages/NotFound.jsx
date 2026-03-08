@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 const NotFound = () => {
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center bg-background px-4 text-center"
+      className="min-h-screen flex flex-col items-center justify-center bg-background px-4 text-center bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[24px_24px]"
       role="alert"
     >
       <AlertTriangle className="h-20 w-20 md:h-24 md:w-24 text-destructive mb-6 shrink-0" />
