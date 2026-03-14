@@ -1,3 +1,4 @@
+// backend/src/models/ProjectVersion.js
 const mongoose = require('mongoose');
 
 const projectVersionSchema = new mongoose.Schema({
@@ -11,9 +12,8 @@ const projectVersionSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  // Use object instead of Map to support filenames with dots
   files: {
-    type: Object, // snapshot of mainFiles at this version
+    type: Object,
     required: true,
   },
   committedBy: {
@@ -25,14 +25,12 @@ const projectVersionSchema = new mongoose.Schema({
     type: String,
     maxlength: 200,
   },
-  // Optional: linked merge request that created this version
   mergeRequest: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'MergeRequest',
   },
 }, { timestamps: true });
 
-// Fast lookup of latest versions
 projectVersionSchema.index({ project: 1, versionNumber: -1 });
 
 module.exports = mongoose.model('ProjectVersion', projectVersionSchema);

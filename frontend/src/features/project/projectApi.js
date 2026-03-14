@@ -6,11 +6,8 @@ export const projectApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: 'http://localhost:5000/api',
     prepareHeaders: (headers, { getState }) => {
-      // Use optional chaining to avoid errors if auth slice is not yet defined
       const token = getState()?.auth?.token || localStorage.getItem('token');
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-      }
+      if (token) headers.set('Authorization', `Bearer ${token}`);
       return headers;
     },
   }),
@@ -31,28 +28,17 @@ export const projectApi = createApi({
     }),
 
     createProject: builder.mutation({
-      query: (body) => ({
-        url: '/projects',
-        method: 'POST',
-        body,
-      }),
+      query: (body) => ({ url: '/projects', method: 'POST', body }),
       invalidatesTags: ['Project'],
     }),
 
     updateProject: builder.mutation({
-      query: ({ id, ...body }) => ({
-        url: `/projects/${id}`,
-        method: 'PATCH',
-        body,
-      }),
+      query: ({ id, ...body }) => ({ url: `/projects/${id}`, method: 'PATCH', body }),
       invalidatesTags: (result, error, { id }) => [{ type: 'Project', id }],
     }),
 
     deleteProject: builder.mutation({
-      query: (id) => ({
-        url: `/projects/${id}`,
-        method: 'DELETE',
-      }),
+      query: (id) => ({ url: `/projects/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Project'],
     }),
 
@@ -87,7 +73,8 @@ export const projectApi = createApi({
 
     getMergeRequests: builder.query({
       query: (projectId) => `/merge-requests/${projectId}`,
-      providesTags: ['MergeRequest'],
+      providesTags: (result, error, projectId) =>
+        result ? result.map(mr => ({ type: 'MergeRequest', id: mr._id })) : ['MergeRequest'],
     }),
 
     acceptMerge: builder.mutation({
@@ -111,7 +98,7 @@ export const projectApi = createApi({
     // ========================
     getMembers: builder.query({
       query: (projectId) => `/collaboration/${projectId}/members`,
-      providesTags: ['Members'],
+      providesTags: (result, error, projectId) => [{ type: 'Members', id: projectId }],
     }),
 
     updateMemberRole: builder.mutation({
@@ -120,7 +107,7 @@ export const projectApi = createApi({
         method: 'PATCH',
         body: { role },
       }),
-      invalidatesTags: ['Members'],
+      invalidatesTags: (result, error, { projectId }) => [{ type: 'Members', id: projectId }],
     }),
 
     removeMember: builder.mutation({
@@ -128,7 +115,7 @@ export const projectApi = createApi({
         url: `/collaboration/${projectId}/members/${memberId}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['Members'],
+      invalidatesTags: (result, error, { projectId }) => [{ type: 'Members', id: projectId }],
     }),
 
     getPendingInvites: builder.query({
@@ -173,13 +160,11 @@ export const projectApi = createApi({
     }),
 
     // ========================
-    // Export
+    // Export Project
     // ========================
     exportProject: builder.query({
-      query: (projectId) => ({
-        url: `/projects/${projectId}/export`,
-        responseHandler: (response) => response.blob(),
-      }),
+      query: (projectId) => `/projects/${projectId}/export`,
+      responseHandler: async (response) => await response.blob(),
     }),
 
   }),

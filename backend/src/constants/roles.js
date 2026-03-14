@@ -1,3 +1,4 @@
+// backend/src/constants/roles.js
 const ROLES = {
   OWNER: 'owner',
   EDITOR: 'editor',

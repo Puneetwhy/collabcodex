@@ -6,43 +6,32 @@ import { cn } from "../../lib/utils"
 /* -------------------------------------------------------------------------- */
 /*                                   Root                                     */
 /* -------------------------------------------------------------------------- */
+const ScrollArea = React.forwardRef(({ className, children, ...props }, ref) => {
+  return (
+    <ScrollAreaPrimitive.Root
+      ref={ref}
+      className={cn("relative overflow-hidden", className)}
+      {...props}
+    >
+      {/* Viewport */}
+      <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">
+        {children}
+      </ScrollAreaPrimitive.Viewport>
 
-const ScrollArea = React.forwardRef(
-  ({ className, children, ...props }, ref) => {
-    return (
-      <ScrollAreaPrimitive.Root
-        ref={ref}
-        className={cn(
-          "relative overflow-hidden",
-          className
-        )}
-        {...props}
-      >
-        {/* Viewport */}
-        <ScrollAreaPrimitive.Viewport
-          className="h-full w-full rounded-[inherit]"
-        >
-          {children}
-        </ScrollAreaPrimitive.Viewport>
+      {/* Scrollbars */}
+      <ScrollBar orientation="vertical" />
+      <ScrollBar orientation="horizontal" />
 
-        {/* Scrollbars */}
-        <ScrollBar orientation="vertical" />
-        <ScrollBar orientation="horizontal" />
-
-        {/* Corner */}
-        <ScrollAreaPrimitive.Corner />
-      </ScrollAreaPrimitive.Root>
-    )
-  }
-)
-
+      {/* Corner */}
+      <ScrollAreaPrimitive.Corner />
+    </ScrollAreaPrimitive.Root>
+  )
+})
 ScrollArea.displayName = "ScrollArea"
-
 
 /* -------------------------------------------------------------------------- */
 /*                                 Scroll Bar                                 */
 /* -------------------------------------------------------------------------- */
-
 const ScrollBar = React.forwardRef(
   ({ className, orientation = "vertical", ...props }, ref) => {
     return (
@@ -64,19 +53,14 @@ const ScrollBar = React.forwardRef(
       >
         <ScrollAreaPrimitive.ScrollAreaThumb
           className={cn(
-            "relative flex-1 rounded-full",
-            "bg-border/60 hover:bg-border",
-            "transition-colors duration-200"
+            "relative flex-1 rounded-full bg-border/60 hover:bg-border transition-colors duration-200"
           )}
         />
       </ScrollAreaPrimitive.ScrollAreaScrollbar>
     )
   }
 )
-
 ScrollBar.displayName = "ScrollBar"
 
-
 /* -------------------------------------------------------------------------- */
-
 export { ScrollArea, ScrollBar }

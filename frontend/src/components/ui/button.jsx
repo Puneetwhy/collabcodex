@@ -1,11 +1,11 @@
+// frontend/src/components/ui/button.jsx
 import * as React from "react"
 import { cva } from "class-variance-authority"
-import { cn } from "../../lib/utils"
+import { cn } from "@/lib/utils"
 import { Slot } from "@radix-ui/react-slot"
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 relative overflow-hidden",
-
   {
     variants: {
       variant: {
@@ -37,7 +37,6 @@ const buttonVariants = cva(
           "text-indigo-600 underline-offset-4 hover:underline hover:text-indigo-500 " +
           "active:text-indigo-500 active:scale-95",
       },
-
       size: {
         default: "h-10 px-5",
         sm: "h-8 px-3 text-xs",
@@ -45,7 +44,6 @@ const buttonVariants = cva(
         icon: "h-10 w-10",
       },
     },
-
     defaultVariants: {
       variant: "default",
       size: "default",

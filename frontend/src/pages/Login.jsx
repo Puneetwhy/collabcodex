@@ -32,49 +32,38 @@ const Login = () => {
   const [loginUser, { isLoading }] = useLoginMutation();
   const [showPassword, setShowPassword] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({
+  const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
   });
 
   const onSubmit = async (data) => {
-  try {
-    
-    const response = await loginUser(data).unwrap();
+    try {
+      const response = await loginUser(data).unwrap();
 
-    login({ user: response.user, token: response.token }); // ✅
+      // Save credentials to Redux + localStorage
+      login({ user: response.user, token: response.token });
 
-    toast.success('Logged in successfully');
+      toast.success('Logged in successfully');
 
-    const from = location.state?.from?.pathname || '/dashboard';
-    navigate(from, { replace: true });
-  } catch (err) {
-    toast.error(err?.data?.message || 'Login failed');
-  }
-};
+      // Navigate to previous location or dashboard
+      const from = location.state?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
+    } catch (err) {
+      toast.error(err?.data?.message || 'Login failed');
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[24px_24px]">
       <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">
-            Welcome back
-          </CardTitle>
-          <CardDescription className="text-center">
-            Enter your credentials to access your projects
-          </CardDescription>
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
+          <CardDescription>Enter your credentials to access your projects</CardDescription>
         </CardHeader>
 
         <CardContent>
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="space-y-5"
-            noValidate
-          >
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
             {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -86,16 +75,13 @@ const Login = () => {
                 {...register('email')}
               />
               {errors.email && (
-                <p className="text-sm text-destructive">
-                  {errors.email.message}
-                </p>
+                <p className="text-sm text-destructive">{errors.email.message}</p>
               )}
             </div>
 
             {/* Password */}
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-
               <div className="relative">
                 <Input
                   id="password"
@@ -105,34 +91,23 @@ const Login = () => {
                   className="pr-10"
                   {...register('password')}
                 />
-
                 <button
                   type="button"
                   className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
-                  onClick={() => setShowPassword((prev) => !prev)}
+                  onClick={() => setShowPassword(prev => !prev)}
                   tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? (
-                    <EyeOff size={18} />
-                  ) : (
-                    <Eye size={18} />
-                  )}
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-
               {errors.password && (
-                <p className="text-sm text-destructive">
-                  {errors.password.message}
-                </p>
+                <p className="text-sm text-destructive">{errors.password.message}</p>
               )}
             </div>
 
-            {/* Submit */}
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
+            {/* Submit Button */}
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <span className="flex items-center justify-center">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -148,10 +123,7 @@ const Login = () => {
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-sm text-center text-muted-foreground">
             Don't have an account?{' '}
-            <Link
-              to="/signup"
-              className="text-primary hover:underline font-medium"
-            >
+            <Link to="/signup" className="text-primary hover:underline font-medium">
               Sign up
             </Link>
           </div>

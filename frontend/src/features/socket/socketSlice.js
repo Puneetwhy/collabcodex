@@ -2,19 +2,22 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-  connected: false,
-  onlineUsers: [],
+  connected: false,      // Whether the socket is connected
+  onlineUsers: [],       // List of online users
 };
 
 const socketSlice = createSlice({
   name: 'socket',
   initialState,
   reducers: {
+    // Update connection status
     setConnected: (state, action) => {
       state.connected = action.payload;
     },
+
+    // Update list of online users
     setOnlineUsers: (state, action) => {
-      state.onlineUsers = action.payload;
+      state.onlineUsers = Array.isArray(action.payload) ? action.payload : [];
     },
   },
 });

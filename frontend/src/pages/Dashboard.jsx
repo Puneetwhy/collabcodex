@@ -1,13 +1,8 @@
 // frontend/src/pages/Dashboard.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGetMyProjectsQuery } from '@/features/project/projectApi';
-import {
-  useGetPendingInvitesQuery,
-  useAcceptInviteMutation,
-  useRejectInviteMutation,
-  useCreateProjectMutation,
-} from '@/features/project/projectApi';
+import { useGetMyProjectsQuery, useCreateProjectMutation } from '@/features/project/projectApi';
+import { useGetPendingInvitesQuery, useAcceptInviteMutation, useRejectInviteMutation } from '@/features/project/projectApi';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -34,13 +29,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -60,18 +49,17 @@ const projectSchema = z.object({
 const Dashboard = () => {
   const navigate = useNavigate();
 
-  const { data: projects = [], isLoading: projectsLoading } =
-    useGetMyProjectsQuery();
-  const { data: pendingInvites = [], isLoading: invitesLoading } =
-    useGetPendingInvitesQuery();
+  // Fetch projects & pending invites
+  const { data: projects = [], isLoading: projectsLoading } = useGetMyProjectsQuery();
+  const { data: pendingInvites = [], isLoading: invitesLoading } = useGetPendingInvitesQuery();
 
-  const [createProject, { isLoading: creating }] =
-    useCreateProjectMutation();
+  const [createProject, { isLoading: creating }] = useCreateProjectMutation();
   const [acceptInvite] = useAcceptInviteMutation();
   const [rejectInvite] = useRejectInviteMutation();
 
   const [openCreateModal, setOpenCreateModal] = useState(false);
 
+  // Form setup
   const form = useForm({
     resolver: zodResolver(projectSchema),
     defaultValues: {
@@ -82,6 +70,7 @@ const Dashboard = () => {
     },
   });
 
+  // Create new project
   const onCreateSubmit = async (values) => {
     try {
       const project = await createProject(values).unwrap();
@@ -90,12 +79,11 @@ const Dashboard = () => {
       form.reset();
       navigate(`/projects/${project._id}`);
     } catch (err) {
-      toast.error(
-        'Failed to create project: ' + (err.data?.message || 'Unknown error')
-      );
+      toast.error('Failed to create project: ' + (err.data?.message || 'Unknown error'));
     }
   };
 
+  // Accept / Reject invite handlers
   const handleAcceptInvite = async (membershipId) => {
     try {
       await acceptInvite(membershipId).unwrap();
@@ -138,10 +126,7 @@ const Dashboard = () => {
                 </DialogDescription>
               </DialogHeader>
 
-              <form
-                onSubmit={form.handleSubmit(onCreateSubmit)}
-                className="space-y-6"
-              >
+              <form onSubmit={form.handleSubmit(onCreateSubmit)} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="name">Project Name</Label>
                   <Input
@@ -150,9 +135,7 @@ const Dashboard = () => {
                     placeholder="My Awesome App"
                   />
                   {form.formState.errors.name && (
-                    <p className="text-sm text-destructive">
-                      {form.formState.errors.name.message}
-                    </p>
+                    <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
                   )}
                 </div>
 
@@ -163,6 +146,9 @@ const Dashboard = () => {
                     {...form.register('description')}
                     placeholder="A brief description..."
                   />
+                  {form.formState.errors.description && (
+                    <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -192,9 +178,7 @@ const Dashboard = () => {
                         <SelectValue placeholder="JavaScript" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="javascript">
-                          JavaScript/Node.js
-                        </SelectItem>
+                        <SelectItem value="javascript">JavaScript/Node.js</SelectItem>
                         <SelectItem value="python">Python</SelectItem>
                         <SelectItem value="java">Java</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
@@ -255,22 +239,22 @@ const Dashboard = () => {
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Users size={14} />
-                      <span>{project.memberCount || 1} members</span>
+                      <span>{project.memberCount || 1} {project.memberCount === 1 ? 'member' : 'members'}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock size={14} />
                       <span>
                         Updated{' '}
-                        {formatDistanceToNow(new Date(project.updatedAt), {
-                          addSuffix: true,
-                        })}
+                        {project.updatedAt
+                          ? formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })
+                          : 'unknown'}
                       </span>
                     </div>
                   </div>
                 </CardContent>
 
                 <CardFooter className="pt-2 border-t text-xs text-muted-foreground">
-                  Role: {project.myRole || 'editor'}
+                  Role: {project.myRole ? project.myRole.charAt(0).toUpperCase() + project.myRole.slice(1) : 'Editor'}
                 </CardFooter>
               </Card>
             ))}
@@ -285,15 +269,17 @@ const Dashboard = () => {
               {pendingInvites.map((invite) => (
                 <Card key={invite._id} className="border-primary/30">
                   <CardHeader>
-                    <CardTitle className="text-lg">{invite.project?.name}</CardTitle>
+                    <CardTitle className="text-lg">{invite.project?.name || 'Unknown Project'}</CardTitle>
                     <CardDescription>
-                      Invited by {invite.fromUser?.username}
+                      Invited by {invite.fromUser?.username || 'Unknown'}
                     </CardDescription>
                   </CardHeader>
 
                   <CardContent>
                     <p className="text-sm">
-                      {invite.project?.description?.slice(0, 100) || 'No description'}...
+                      {invite.project?.description
+                        ? `${invite.project.description.slice(0, 100)}...`
+                        : 'No description'}
                     </p>
                   </CardContent>
 

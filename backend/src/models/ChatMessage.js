@@ -23,7 +23,6 @@ const chatMessageSchema = new mongoose.Schema({
     enum: ['user', 'system'],
     default: 'user',
   },
-  // For system messages (e.g. "Push accepted by @user")
   metadata: mongoose.Schema.Types.Mixed,
 }, { timestamps: true });
 

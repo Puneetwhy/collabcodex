@@ -10,13 +10,12 @@ const {
 const { protect } = require('../middlewares/authMiddleware');
 const { isEditor, isOwner } = require('../middlewares/roleMiddleware');
 
-// All routes protected
 router.use(protect);
 
-// Push draft → create MR
+// Push draft → create merge request
 router.post('/:projectId/push', isEditor, pushDraft);
 
-// List MRs
+// List merge requests
 router.get('/:projectId', isEditor, getMergeRequests);
 
 // Accept / Reject (owner only)

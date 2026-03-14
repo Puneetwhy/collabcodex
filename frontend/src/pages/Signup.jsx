@@ -45,18 +45,15 @@ const Signup = () => {
   })
 
   const onSubmit = async (data) => {
-  try {
-    const response = await signupUser(data).unwrap()
-
-    login({ user: response.user, token: response.token })
-
-    toast.success('Account created successfully')
-
-    navigate('/dashboard')
-  } catch (err) {
-    toast.error(err?.data?.message || 'Signup failed')
+    try {
+      const response = await signupUser(data).unwrap()
+      login({ user: response.user, token: response.token })
+      toast.success('Account created successfully')
+      navigate('/dashboard')
+    } catch (err) {
+      toast.error(err?.data?.message || 'Signup failed')
+    }
   }
-}
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 py-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[24px_24px]">
@@ -71,11 +68,7 @@ const Signup = () => {
         </CardHeader>
 
         <CardContent>
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="space-y-5"
-            noValidate
-          >
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
             {/* Username */}
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
@@ -86,9 +79,7 @@ const Signup = () => {
                 {...register('username')}
               />
               {errors.username && (
-                <p className="text-sm text-destructive">
-                  {errors.username.message}
-                </p>
+                <p className="text-sm text-destructive">{errors.username.message}</p>
               )}
             </div>
 
@@ -103,9 +94,7 @@ const Signup = () => {
                 {...register('email')}
               />
               {errors.email && (
-                <p className="text-sm text-destructive">
-                  {errors.email.message}
-                </p>
+                <p className="text-sm text-destructive">{errors.email.message}</p>
               )}
             </div>
 
@@ -127,31 +116,20 @@ const Signup = () => {
                   className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
                   onClick={() => setShowPassword((prev) => !prev)}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
               {errors.password && (
-                <p className="text-sm text-destructive">
-                  {errors.password.message}
-                </p>
+                <p className="text-sm text-destructive">{errors.password.message}</p>
               )}
             </div>
 
             {/* Submit */}
-            <Button
-              type="submit"
-              className="w-full h-11 font-medium"
-              disabled={isLoading}
-            >
+            <Button type="submit" className="w-full h-11 font-medium" disabled={isLoading}>
               {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
-                </>
+                <span className="flex items-center justify-center">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account...
+                </span>
               ) : (
                 'Sign Up'
               )}
@@ -162,10 +140,7 @@ const Signup = () => {
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-sm text-center text-muted-foreground">
             Already have an account?{' '}
-            <Link
-              to="/login"
-              className="text-primary font-medium hover:underline"
-            >
+            <Link to="/login" className="text-primary font-medium hover:underline">
               Log in
             </Link>
           </div>

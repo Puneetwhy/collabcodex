@@ -8,10 +8,15 @@ const NotFound = () => {
     <div
       className="min-h-screen flex flex-col items-center justify-center bg-background px-4 text-center bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[24px_24px]"
       role="alert"
+      aria-labelledby="notfound-title"
+      aria-describedby="notfound-description"
     >
       <AlertTriangle className="h-20 w-20 md:h-24 md:w-24 text-destructive mb-6 shrink-0" />
 
-      <h1 className="text-6xl md:text-8xl font-bold text-primary mb-4">
+      <h1
+        id="notfound-title"
+        className="text-6xl md:text-8xl font-bold text-primary mb-4"
+      >
         404
       </h1>
 
@@ -19,16 +24,16 @@ const NotFound = () => {
         Page Not Found
       </h2>
 
-      <p className="text-base md:text-lg text-muted-foreground max-w-md mb-8">
+      <p
+        id="notfound-description"
+        className="text-base md:text-lg text-muted-foreground max-w-md mb-8"
+      >
         The page you're looking for doesn't exist or has been moved.
       </p>
 
       <Button size="lg" asChild>
-        <Link
-          to="/dashboard"
-          className="flex items-center justify-center"
-        >
-          <Home className="mr-2 h-5 w-5" />
+        <Link to="/dashboard" className="flex items-center justify-center gap-2">
+          <Home className="h-5 w-5" />
           Back to Dashboard
         </Link>
       </Button>

@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -39,6 +40,7 @@ const ProjectSettings = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
 
+  // API Hooks
   const { data: project, isLoading: projectLoading } = useGetProjectQuery(projectId);
   const [updateProject, { isLoading: updating }] = useUpdateProjectMutation();
   const [deleteProject, { isLoading: deleting }] = useDeleteProjectMutation();
@@ -47,19 +49,22 @@ const ProjectSettings = () => {
   const [updateMemberRole] = useUpdateMemberRoleMutation();
   const [removeMember] = useRemoveMemberMutation();
 
+  // Local state
   const [formData, setFormData] = useState({ name: '', description: '', visibility: 'private' });
   const [inviteEmail, setInviteEmail] = useState('');
 
+  // Initialize form when project loads
   useEffect(() => {
     if (project) {
       setFormData({
-        name: project.name,
+        name: project.name || '',
         description: project.description || '',
-        visibility: project.visibility,
+        visibility: project.visibility || 'private',
       });
     }
   }, [project]);
 
+  // Handlers
   const handleSaveDetails = async () => {
     try {
       await updateProject({ projectId, ...formData }).unwrap();
@@ -129,7 +134,7 @@ const ProjectSettings = () => {
       <main className="container mx-auto px-4 py-8 max-w-5xl space-y-8">
         <h1 className="text-3xl font-bold mb-8">Project Settings</h1>
 
-        {/* Project Details Edit */}
+        {/* Project Details */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle>Project Details</CardTitle>

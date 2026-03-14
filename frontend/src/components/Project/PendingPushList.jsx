@@ -10,16 +10,14 @@ import { cn } from '@/lib/utils';
 const PendingPushList = ({ projectId, onSelectMr }) => {
   const { data: mergeRequests = [], isLoading } = useGetMergeRequestsQuery(projectId);
 
-  // Filter only open or draft merge requests
+  // Only include open or draft merge requests
   const pending = mergeRequests.filter(mr => mr.status === 'open' || mr.status === 'draft');
 
-  // Loading placeholder
+  // Loading skeleton UI
   const renderLoading = () => (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="text-base font-semibold tracking-tight">
-          Pending Pushes
-        </CardTitle>
+        <CardTitle className="text-base font-semibold tracking-tight">Pending Pushes</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {[1, 2].map(i => (
@@ -29,13 +27,11 @@ const PendingPushList = ({ projectId, onSelectMr }) => {
     </Card>
   );
 
-  // Empty state
+  // Empty state UI
   const renderEmpty = () => (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="text-base font-semibold tracking-tight">
-          Pending Pushes
-        </CardTitle>
+        <CardTitle className="text-base font-semibold tracking-tight">Pending Pushes</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col items-center justify-center h-40 text-muted-foreground text-center">
         <GitPullRequest size={36} className="mb-3 opacity-40" />
@@ -45,16 +41,14 @@ const PendingPushList = ({ projectId, onSelectMr }) => {
     </Card>
   );
 
-  // Render list of pending merge requests
+  // List of pending merge requests
   const renderList = () => (
     <Card className="h-full overflow-hidden">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight">
           <GitPullRequest size={16} className="opacity-70" />
           Pending Pushes
-          <span className="text-muted-foreground text-sm font-normal">
-            ({pending.length})
-          </span>
+          <span className="text-muted-foreground text-sm font-normal">({pending.length})</span>
         </CardTitle>
       </CardHeader>
 
@@ -62,23 +56,23 @@ const PendingPushList = ({ projectId, onSelectMr }) => {
         <div className="divide-y divide-border/60 max-h-[calc(100vh-200px)] overflow-auto">
           {pending.map(mr => {
             const changesCount =
-              mr.diff?.split('\n').filter(l => l.startsWith('+') || l.startsWith('-')).length || 0;
+              mr.diff?.split('\n').filter(line => line.startsWith('+') || line.startsWith('-')).length || 0;
 
             return (
               <div
                 key={mr._id}
-                onClick={() => onSelectMr(mr)}
-                className={cn(
-                  'group p-4 cursor-pointer transition-colors duration-150',
-                  'hover:bg-muted/60'
-                )}
+                onClick={() => onSelectMr?.(mr)}
+                className={cn('group p-4 cursor-pointer transition-colors duration-150 hover:bg-muted/60')}
               >
                 <div className="flex items-start justify-between gap-4">
-                  {/* Author & Title */}
+                  {/* Author and MR title */}
                   <div className="flex items-center gap-3 min-w-0">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={mr.author?.avatar} />
-                      <AvatarFallback>{mr.author?.username?.[0] || '?'}</AvatarFallback>
+                      {mr.author?.avatar ? (
+                        <AvatarImage src={mr.author.avatar} />
+                      ) : (
+                        <AvatarFallback>{mr.author?.username?.[0] || '?'}</AvatarFallback>
+                      )}
                     </Avatar>
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{mr.title}</p>
@@ -94,11 +88,11 @@ const PendingPushList = ({ projectId, onSelectMr }) => {
                   </Badge>
                 </div>
 
-                {/* Timestamp & changes count */}
+                {/* Timestamp & change count */}
                 <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Clock size={12} className="opacity-60" />
-                    {formatDistanceToNow(new Date(mr.createdAt), { addSuffix: true })}
+                    {mr.createdAt ? formatDistanceToNow(new Date(mr.createdAt), { addSuffix: true }) : '—'}
                   </div>
                   <div className="flex items-center gap-1">
                     <FileDiff size={12} className="opacity-60" />

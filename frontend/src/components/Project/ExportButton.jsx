@@ -5,18 +5,13 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 
-const ExportButton = ({
-  projectId,
-  variant = 'outline',
-  size = 'default',
-  className = '',
-}) => {
+const ExportButton = ({ projectId, variant = 'outline', size = 'default', className = '' }) => {
   const { isAuthenticated } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async () => {
     if (!projectId || !isAuthenticated) {
-      toast.error('Cannot export: project or authentication missing');
+      toast.error('Cannot export: missing project or authentication');
       return;
     }
 
@@ -42,7 +37,6 @@ const ExportButton = ({
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-
       const a = document.createElement('a');
       a.href = url;
       a.download = `collabcodex-${projectId}.zip`;

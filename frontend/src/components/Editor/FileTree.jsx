@@ -1,5 +1,5 @@
 // frontend/src/components/Editor/FileTree.jsx
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { ChevronRight, ChevronDown, File, Folder, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,7 +23,7 @@ const FileTree = ({ files, onFileSelect, selectedPath, projectId }) => {
   const { socket } = useSocket(projectId);
 
   // Build tree from files object
-  const buildTree = (fileMap) => {
+  const buildTree = useCallback((fileMap) => {
     const root = { children: {}, type: 'folder', path: '' };
     Object.keys(fileMap).forEach((path) => {
       const parts = path.split('/');
@@ -32,7 +32,10 @@ const FileTree = ({ files, onFileSelect, selectedPath, projectId }) => {
         if (!current.children[part]) {
           current.children[part] = {
             name: part,
-            path: i === parts.length - 1 ? path : `${current.path ? current.path + '/' : ''}${part}`,
+            path:
+              i === parts.length - 1
+                ? path
+                : `${current.path ? current.path + '/' : ''}${part}`,
             type: i === parts.length - 1 ? 'file' : 'folder',
             children: i === parts.length - 1 ? null : {},
           };
@@ -41,7 +44,7 @@ const FileTree = ({ files, onFileSelect, selectedPath, projectId }) => {
       });
     });
     return root;
-  };
+  }, []);
 
   const tree = buildTree(files);
 
@@ -55,10 +58,25 @@ const FileTree = ({ files, onFileSelect, selectedPath, projectId }) => {
 
   // ===================== CREATE FILE/FOLDER =====================
   const handleCreate = (type, parentPath = '') => {
-    const name = prompt(`Enter ${type} name:`);
-    if (!name?.trim()) return;
-    const path = parentPath ? `${parentPath}/${name.trim()}` : name.trim();
-    socket?.emit('create-item', { projectId, path, type, content: type === 'file' ? '// New file' : null });
+    const name = prompt(`Enter ${type} name:`)?.trim();
+    if (!name) return;
+
+    const fullPath = parentPath ? `${parentPath}/${name}` : name;
+
+    // Duplicate check
+    if (files[fullPath]) {
+      toast.error(`${type === 'file' ? 'File' : 'Folder'} already exists`);
+      return;
+    }
+
+    // Optimistic UI update
+    socket?.emit('create-item', {
+      projectId,
+      path: fullPath,
+      type,
+      content: type === 'file' ? '// New file' : null,
+    });
+
     toast.success(`${type === 'file' ? 'File' : 'Folder'} "${name}" created`);
   };
 
@@ -70,10 +88,11 @@ const FileTree = ({ files, onFileSelect, selectedPath, projectId }) => {
     input.multiple = true;
 
     input.onchange = async (e) => {
-      const files = Array.from(e.target.files);
-      const items = [];
+      const filesArray = Array.from(e.target.files);
+      if (!filesArray.length) return toast.error('No files selected');
 
-      for (const file of files) {
+      const items = [];
+      for (const file of filesArray) {
         const content = await file.text();
         const relativePath = file.webkitRelativePath;
         items.push({ path: relativePath, content });
@@ -110,6 +129,8 @@ const FileTree = ({ files, onFileSelect, selectedPath, projectId }) => {
         reader.onload = (e) => {
           const fullPath = path ? `${path}/${file.name}` : file.name;
           uploadItems.push({ path: fullPath, content: e.target.result });
+
+          // Emit once all files read
           if (uploadItems.length === e.dataTransfer.files.length) {
             socket?.emit('upload-folder', { projectId, items: uploadItems });
             toast.success('Folder uploaded!');
@@ -139,13 +160,25 @@ const FileTree = ({ files, onFileSelect, selectedPath, projectId }) => {
           <ContextMenuTrigger>
             <div
               className={cn(
-                'flex items-center gap-1.5 px-2 py-1 rounded-md cursor-pointer transition-colors',
+                'flex items-center gap-1.5 px-2 py-1 rounded-md cursor-pointer transition-colors select-none',
                 isSelected ? 'bg-accent text-accent-foreground' : 'hover:bg-muted'
               )}
               onClick={() => (isFolder ? toggleFolder(fullPath) : onFileSelect(fullPath))}
             >
-              {isFolder ? (isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />) : <div className="w-3.5" />}
-              {isFolder ? <Folder size={16} className="text-blue-500" /> : <File size={16} className="text-gray-500" />}
+              {isFolder ? (
+                isExpanded ? (
+                  <ChevronDown size={14} />
+                ) : (
+                  <ChevronRight size={14} />
+                )
+              ) : (
+                <div className="w-3.5" />
+              )}
+              {isFolder ? (
+                <Folder size={16} className="text-blue-500" />
+              ) : (
+                <File size={16} className="text-gray-500" />
+              )}
               <span className="text-sm truncate">{name}</span>
             </div>
           </ContextMenuTrigger>
@@ -154,38 +187,47 @@ const FileTree = ({ files, onFileSelect, selectedPath, projectId }) => {
             <ContextMenuItem onClick={() => handleCreate('file', fullPath)}>New File</ContextMenuItem>
             <ContextMenuItem onClick={() => handleCreate('folder', fullPath)}>New Folder</ContextMenuItem>
             <ContextMenuItem onClick={() => handleUpload()}>Upload Folder</ContextMenuItem>
-            <ContextMenuItem
-              onClick={() => {
-                const newName = prompt('Rename to:', name);
-                if (newName?.trim() && newName !== name) {
-                  socket?.emit('rename-item', {
-                    projectId,
-                    oldPath: fullPath,
-                    newPath: prefix ? `${prefix}/${newName}` : newName,
-                  });
-                }
-              }}
-            >
-              Rename
-            </ContextMenuItem>
-            <ContextMenuItem
-              className="text-destructive"
-              onClick={() => {
-                if (confirm(`Delete "${name}"?`)) socket?.emit('delete-item', { projectId, path: fullPath });
-              }}
-            >
-              Delete
-            </ContextMenuItem>
+            {fullPath && (
+              <>
+                <ContextMenuItem
+                  onClick={() => {
+                    const newName = prompt('Rename to:', name)?.trim();
+                    if (newName && newName !== name) {
+                      const newPath = prefix ? `${prefix}/${newName}` : newName;
+                      socket?.emit('rename-item', { projectId, oldPath: fullPath, newPath });
+                    }
+                  }}
+                >
+                  Rename
+                </ContextMenuItem>
+                <ContextMenuItem
+                  className="text-destructive"
+                  onClick={() => {
+                    if (confirm(`Delete "${name}"?`)) socket?.emit('delete-item', { projectId, path: fullPath });
+                  }}
+                >
+                  Delete
+                </ContextMenuItem>
+              </>
+            )}
           </ContextMenuContent>
 
-          {isFolder && isExpanded && data.children && <div className="ml-4 border-l border-border/40 pl-2">{renderNode(data, fullPath)}</div>}
+          {isFolder && isExpanded && data.children && (
+            <div className="ml-4 border-l border-border/40 pl-2 transition-all duration-150">
+              {renderNode(data, fullPath)}
+            </div>
+          )}
         </ContextMenu>
       );
     });
   };
 
   return (
-    <div className="h-full overflow-auto bg-card border-r border-border p-2" onDragOver={(e) => e.preventDefault()} onDrop={handleDrop}>
+    <div
+      className="h-full overflow-auto bg-card border-r border-border p-2"
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={handleDrop}
+    >
       <div className="flex items-center justify-between mb-3 sticky top-0 bg-card z-10 py-1">
         <h3 className="font-medium text-sm">Explorer</h3>
         <DropdownMenu>

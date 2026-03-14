@@ -17,6 +17,7 @@ const PushReviewCard = ({ mergeRequest, projectId, onClose }) => {
 
   const isOwner = user?._id === mergeRequest?.project?.owner?._id;
 
+  // Accept the merge request
   const handleAccept = async () => {
     try {
       await acceptMerge({ projectId, mrId: mergeRequest._id }).unwrap();
@@ -27,6 +28,7 @@ const PushReviewCard = ({ mergeRequest, projectId, onClose }) => {
     }
   };
 
+  // Reject the merge request
   const handleReject = async () => {
     try {
       await rejectMerge({ projectId, mrId: mergeRequest._id }).unwrap();
@@ -37,6 +39,7 @@ const PushReviewCard = ({ mergeRequest, projectId, onClose }) => {
     }
   };
 
+  // Configure Monaco editor on mount
   const handleEditorMount = (editor) => {
     editor.updateOptions({ readOnly: true });
     editor.revealLine(1);
@@ -44,20 +47,25 @@ const PushReviewCard = ({ mergeRequest, projectId, onClose }) => {
 
   return (
     <Card className="h-full flex flex-col overflow-hidden border border-border/60 shadow-lg rounded-2xl bg-background">
+      
       {/* HEADER */}
       <CardHeader className="pb-4 border-b bg-muted/30 backdrop-blur">
         <div className="flex items-start justify-between gap-4">
+          
+          {/* Author info & title */}
           <div className="flex items-start gap-3">
             <Avatar className="h-9 w-9">
-              <AvatarImage src={mergeRequest.author?.avatar} />
-              <AvatarFallback>{mergeRequest.author?.username?.[0] || '?'}</AvatarFallback>
+              {mergeRequest.author?.avatar ? (
+                <AvatarImage src={mergeRequest.author.avatar} />
+              ) : (
+                <AvatarFallback>{mergeRequest.author?.username?.[0] || '?'}</AvatarFallback>
+              )}
             </Avatar>
 
             <div>
               <CardTitle className="text-lg font-semibold tracking-tight">
                 {mergeRequest.title}
               </CardTitle>
-
               <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
                 <span>Proposed by</span>
                 <span className="font-medium text-foreground">{mergeRequest.author?.username || 'Unknown'}</span>
@@ -67,12 +75,12 @@ const PushReviewCard = ({ mergeRequest, projectId, onClose }) => {
             </div>
           </div>
 
+          {/* Status badge & close */}
           <div className="flex items-center gap-2">
             <Badge variant="secondary" className="gap-1 flex items-center">
               <GitBranch size={12} />
               Draft Review
             </Badge>
-
             {onClose && (
               <Button variant="ghost" size="sm" onClick={onClose}>
                 Close

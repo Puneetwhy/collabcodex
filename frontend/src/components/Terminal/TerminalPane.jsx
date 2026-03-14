@@ -1,3 +1,4 @@
+// frontend/src/components/Project/TerminalPane.jsx
 import { useEffect, useRef, useState } from 'react';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
@@ -19,6 +20,7 @@ const TerminalPane = ({ projectId }) => {
   useEffect(() => {
     if (!terminalRef.current || !socket) return;
 
+    // Initialize terminal
     const term = new Terminal({
       cursorBlink: true,
       theme: {
@@ -42,6 +44,7 @@ const TerminalPane = ({ projectId }) => {
     xtermRef.current = term;
     fitAddonRef.current = fitAddon;
 
+    // Handle window resize
     const resizeListener = () => fitAddon.fit();
     window.addEventListener('resize', resizeListener);
 
@@ -49,23 +52,23 @@ const TerminalPane = ({ projectId }) => {
     socket.emit('join-project', { projectId });
     socket.emit('attach-terminal', { projectId, language });
 
-    // Status updates
+    // Terminal status
     socket.on('terminal-status', (msg) => {
       setStatus(msg);
       term.write(`\r\n${msg}\r\n$ `);
     });
 
-    // Real output from Docker
+    // Terminal output
     socket.on('terminal-output', (data) => {
       term.write(data);
     });
 
-    // Send user input to backend
+    // User input to backend
     term.onData((data) => {
       socket.emit('terminal-input', { projectId, data });
     });
 
-    // Ctrl+C support
+    // Ctrl+C handling
     term.onKey(({ key, domEvent }) => {
       if (domEvent.ctrlKey && key === 'c') {
         socket.emit('terminal-input', { projectId, data: '\x03' });
@@ -73,7 +76,7 @@ const TerminalPane = ({ projectId }) => {
       }
     });
 
-    // Handle resize from frontend
+    // Emit resize events
     const handleResize = ({ cols, rows }) => {
       socket.emit('terminal-resize', { projectId, cols, rows });
     };
@@ -89,12 +92,14 @@ const TerminalPane = ({ projectId }) => {
     };
   }, [socket, projectId, language]);
 
+  // Clear terminal
   const handleClear = () => {
     xtermRef.current?.clear();
     xtermRef.current?.write('$ ');
     fitAddonRef.current?.fit();
   };
 
+  // Restart terminal
   const handleRestart = () => {
     socket?.emit('restart-terminal', { projectId, language });
     xtermRef.current?.clear();
@@ -102,6 +107,7 @@ const TerminalPane = ({ projectId }) => {
     toast.info('Terminal restarted');
   };
 
+  // Change language
   const handleLanguageChange = (e) => {
     const newLang = e.target.value;
     setLanguage(newLang);
@@ -117,7 +123,13 @@ const TerminalPane = ({ projectId }) => {
           <TerminalIcon size={16} className="text-primary" />
           <span className="font-medium text-sm tracking-tight">Terminal</span>
           <div className="flex items-center gap-1 text-xs">
-            <Circle size={6} className={cn('fill-current', status.includes('Connected') ? 'text-green-500' : 'text-red-500')} />
+            <Circle
+              size={6}
+              className={cn(
+                'fill-current',
+                status.includes('Connected') ? 'text-green-500' : 'text-red-500'
+              )}
+            />
             <span className={cn(status.includes('Connected') ? 'text-green-500' : 'text-red-500')}>
               {status}
             </span>
@@ -135,11 +147,23 @@ const TerminalPane = ({ projectId }) => {
             <option value="java">Java</option>
           </select>
 
-          <Button variant="ghost" size="icon" onClick={handleClear} title="Clear" className="h-8 w-8 p-0 hover:bg-accent/50">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleClear}
+            title="Clear"
+            className="h-8 w-8 p-0 hover:bg-accent/50"
+          >
             <Trash2 size={14} />
           </Button>
 
-          <Button variant="ghost" size="icon" onClick={handleRestart} title="Restart" className="h-8 w-8 p-0 hover:bg-accent/50">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleRestart}
+            title="Restart"
+            className="h-8 w-8 p-0 hover:bg-accent/50"
+          >
             <RotateCcw size={14} />
           </Button>
         </div>

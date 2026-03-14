@@ -1,5 +1,6 @@
+// frontend/src/components/ui/card.jsx
 import * as React from "react"
-import { cn } from "../../lib/utils"
+import { cn } from "@/lib/utils"
 
 const Card = React.forwardRef(({ className, ...props }, ref) => (
   <div
@@ -8,28 +9,22 @@ const Card = React.forwardRef(({ className, ...props }, ref) => (
       "group relative rounded-2xl border border-neutral-200",
       "bg-white cursor-pointer",
       "shadow-md transition-all duration-300 ease-out",
-
-      // desktop hover
       "hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(0,0,0,0.12)]",
-
-      // mobile tap
       "active:-translate-y-1 active:shadow-[0_20px_40px_rgba(0,0,0,0.12)]",
-
       className
     )}
     {...props}
   >
-    {/* glow behind card */}
+    {/* Glow behind card */}
     <div
       className="
-      absolute inset-0 -z-10 rounded-2xl blur-2xl opacity-0
-      transition duration-300
-      group-hover:opacity-100
-      group-active:opacity-100
-      bg-gradient-to-r from-red-400/30 via-yellow-400/30 to-pink-400/30
+        absolute inset-0 -z-10 rounded-2xl blur-2xl opacity-0
+        transition duration-300
+        group-hover:opacity-100
+        group-active:opacity-100
+        bg-gradient-to-r from-red-400/30 via-yellow-400/30 to-pink-400/30
       "
-    ></div>
-
+    />
     {props.children}
   </div>
 ))

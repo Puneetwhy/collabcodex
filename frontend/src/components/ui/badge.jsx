@@ -1,5 +1,6 @@
+// frontend/src/components/ui/badge.jsx
 import { cva } from "class-variance-authority"
-import { cn } from "../../lib/utils"
+import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
   "inline-flex items-center justify-center whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium tracking-tight transition-all duration-200 ease-out select-none",
@@ -8,13 +9,10 @@ const badgeVariants = cva(
       variant: {
         default:
           "border-transparent bg-primary text-primary-foreground shadow-sm hover:shadow-md hover:brightness-105",
-
         secondary:
           "border-transparent bg-secondary text-secondary-foreground shadow-sm hover:shadow-md hover:brightness-105",
-
         destructive:
           "border-transparent bg-destructive text-destructive-foreground shadow-sm hover:shadow-md hover:brightness-105",
-
         outline:
           "border-border bg-background text-foreground hover:bg-muted/50 hover:shadow-sm",
       },

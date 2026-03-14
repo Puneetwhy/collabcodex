@@ -2,7 +2,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
-import { cn } from '@/lib/utils'; // ← Yeh line add karo (cn ke liye)
+import { cn } from '@/lib/utils';
 
 const COLORS = [
   '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#9B59B6',
@@ -21,11 +21,10 @@ const MonacoWrapper = ({
   theme = 'light',
 }) => {
   const editorRef = useRef(null);
-  const decorationsRef = useRef({}); // userId → { ids, color }
+  const decorationsRef = useRef({});
   const styleRef = useRef(null);
   const lastEmitRef = useRef(0);
 
-  // Get consistent color for each remote user
   const getUserColor = useCallback((userId) => {
     if (!decorationsRef.current[userId]?.color) {
       const color = COLORS[Object.keys(decorationsRef.current).length % COLORS.length];
@@ -34,7 +33,6 @@ const MonacoWrapper = ({
     return decorationsRef.current[userId].color;
   }, []);
 
-  // Update remote cursor/selection decorations
   const updateDecoration = useCallback((userId, cursor, selection) => {
     const editor = editorRef.current;
     if (!editor) return;
@@ -47,10 +45,7 @@ const MonacoWrapper = ({
         range: new monaco.Range(cursor.line, cursor.column, cursor.line, cursor.column),
         options: {
           className: `remote-cursor-${userId}`,
-          after: {
-            content: ' ',
-            inlineClassName: `remote-cursor-indicator-${userId}`,
-          },
+          after: { content: ' ', inlineClassName: `remote-cursor-indicator-${userId}` },
         },
       });
     }
@@ -71,37 +66,31 @@ const MonacoWrapper = ({
     const newIds = editor.deltaDecorations(oldIds, decorations);
     decorationsRef.current[userId].ids = newIds;
 
-    // Inject dynamic CSS for cursor/selection
+    // Inject dynamic CSS
     if (styleRef.current) {
       let css = '';
       Object.entries(decorationsRef.current).forEach(([uid, { color }]) => {
         css += `
-          .remote-cursor-indicator-${uid} {
-            border-left: 2px solid ${color};
-            margin-left: -1px;
-          }
-          .remote-selection-${uid} {
-            background-color: ${color}33 !important;
-          }
+          .remote-cursor-indicator-${uid} { border-left: 2px solid ${color}; margin-left:-1px; }
+          .remote-selection-${uid} { background-color: ${color}33 !important; }
         `;
       });
       styleRef.current.innerHTML = css;
     }
   }, [getUserColor]);
 
-  // Throttled cursor/selection send
   const sendCursorUpdate = useCallback(() => {
     if (!editorRef.current || !socket || !user) return;
 
     const now = Date.now();
-    if (now - lastEmitRef.current < 50) return; // throttle 50ms
+    if (now - lastEmitRef.current < 50) return;
     lastEmitRef.current = now;
 
     const position = editorRef.current.getPosition();
     const selection = editorRef.current.getSelection();
 
     socket.emit('cursor-move', {
-      projectId: socket.projectId, // assuming projectId in socket context
+      projectId: socket.projectId,
       cursor: { line: position.lineNumber, column: position.column },
     });
 
@@ -117,14 +106,12 @@ const MonacoWrapper = ({
       });
     }
 
-    // Also send selected text to AI pane if needed
     if (onSelect) {
       const selectedText = editorRef.current.getModel().getValueInRange(selection);
       onSelect({ text: selectedText || '' });
     }
   }, [socket, user, onSelect]);
 
-  // Mount editor + listeners
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor || !socket || !user) return;
@@ -148,15 +135,11 @@ const MonacoWrapper = ({
     };
   }, [socket, user, sendCursorUpdate, updateDecoration]);
 
-  // Inject global styles for remote cursors/selections
   useEffect(() => {
     const style = document.createElement('style');
     styleRef.current = style;
     document.head.appendChild(style);
-
-    return () => {
-      document.head.removeChild(style);
-    };
+    return () => document.head.removeChild(style);
   }, []);
 
   return (
@@ -171,22 +154,19 @@ const MonacoWrapper = ({
         onChange={onChange}
         onMount={(editor, monacoInstance) => {
           editorRef.current = editor;
-          // Optional: Add custom monaco configurations here
+
+          // Optional custom themes
           monacoInstance.editor.defineTheme('custom-dark', {
             base: 'vs-dark',
             inherit: true,
             rules: [],
-            colors: {
-              'editor.background': '#0f1117',
-            },
+            colors: { 'editor.background': '#0f1117' },
           });
           monacoInstance.editor.defineTheme('custom-light', {
             base: 'vs',
             inherit: true,
             rules: [],
-            colors: {
-              'editor.background': '#ffffff',
-            },
+            colors: { 'editor.background': '#ffffff' },
           });
         }}
         options={{

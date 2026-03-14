@@ -29,8 +29,8 @@ const notificationSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  link: String, // e.g. /projects/:id/merge-requests/:mrId
-  data: mongoose.Schema.Types.Mixed, // extra payload (e.g. mergeRequestId)
+  link: String,
+  data: mongoose.Schema.Types.Mixed,
 }, { timestamps: true });
 
 notificationSchema.index({ user: 1, read: 1, createdAt: -1 });

@@ -2,13 +2,11 @@
 const ProjectMember = require('../models/ProjectMember');
 const { ROLES } = require('../constants/roles');
 
-// Middleware factory: require at least a minimum role
 const requireRole = (minRole) => async (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({ message: 'Not authenticated' });
   }
 
-  // Get project ID from params/body/query (flexible)
   const projectId = req.params.projectId || req.params.id || req.body.projectId || req.query.projectId;
 
   if (!projectId) {
@@ -26,44 +24,32 @@ const requireRole = (minRole) => async (req, res, next) => {
       return res.status(403).json({ message: 'You are not a member of this project' });
     }
 
-    const userRole = membership.role;
-
-    // Simple role hierarchy check (owner > editor > viewer)
     const roleLevels = {
       [ROLES.OWNER]: 3,
       [ROLES.EDITOR]: 2,
       [ROLES.VIEWER]: 1,
     };
 
-    if (roleLevels[userRole] < roleLevels[minRole]) {
+    if (roleLevels[membership.role] < roleLevels[minRole]) {
       return res.status(403).json({
-        message: `Insufficient permissions. Required at least: ${minRole}, you have: ${userRole}`,
+        message: `Insufficient permissions. Required: ${minRole}, you have: ${membership.role}`,
       });
     }
 
-    // Attach membership to req for use in controllers
     req.membership = membership;
     next();
-  } catch (error) {
-    console.error('Role middleware error:', error);
+  } catch (err) {
+    console.error('Role middleware error:', err.message);
     res.status(500).json({ message: 'Server error during role check' });
   }
 };
 
-// Convenience middleware
 const isOwner = requireRole(ROLES.OWNER);
 const isEditor = requireRole(ROLES.EDITOR);
-const isViewerOrHigher = requireRole(ROLES.VIEWER); // Allows viewer, editor, owner
-
-// Optional: Granular permission check (if you add PERMISSIONS later)
-const hasPermission = (permission) => async (req, res, next) => {
-  // For now: just use role-based — extend later if needed
-  next();
-};
+const isViewerOrHigher = requireRole(ROLES.VIEWER);
 
 module.exports = {
   requireRole,
-  hasPermission,
   isOwner,
   isEditor,
   isViewerOrHigher,

@@ -59,6 +59,7 @@ const VersionHistory = ({ projectId, open, onOpenChange }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl h-[92vh] flex flex-col p-0 overflow-hidden rounded-2xl">
+
         {/* HEADER */}
         <DialogHeader className="px-8 pt-8 pb-5 border-b bg-muted/30 backdrop-blur">
           <DialogTitle className="text-2xl font-semibold flex items-center gap-3">
@@ -71,6 +72,7 @@ const VersionHistory = ({ projectId, open, onOpenChange }) => {
         </DialogHeader>
 
         <div className="flex flex-1 overflow-hidden">
+
           {/* LEFT SIDEBAR */}
           <div className="w-96 border-r bg-muted/10 flex flex-col">
             <ScrollArea className="flex-1">

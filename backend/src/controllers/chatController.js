@@ -3,27 +3,21 @@ const ChatMessage = require('../models/ChatMessage');
 const ProjectMember = require('../models/ProjectMember');
 const Notification = require('../models/Notification');
 
-// Get chat history for a project (paginated, newest first)
 const getChatHistory = async (req, res) => {
   const { projectId } = req.params;
-  const { page = 1, limit = 50, before = null } = req.query;
+  const { page = 1, limit = 50, before } = req.query;
 
   try {
-    // Verify user is member (viewer or higher)
     const membership = await ProjectMember.findOne({
       project: projectId,
       user: req.user._id,
       status: 'active',
     });
 
-    if (!membership) {
-      return res.status(403).json({ message: 'You do not have access to this project chat' });
-    }
+    if (!membership) return res.status(403).json({ message: 'Access denied' });
 
     const query = { project: projectId };
-    if (before) {
-      query.createdAt = { $lt: new Date(before) };
-    }
+    if (before) query.createdAt = { $lt: new Date(before) };
 
     const messages = await ChatMessage.find(query)
       .populate('user', 'username avatar')
@@ -34,7 +28,7 @@ const getChatHistory = async (req, res) => {
     const total = await ChatMessage.countDocuments({ project: projectId });
 
     res.json({
-      messages: messages.reverse(), // oldest → newest for frontend
+      messages: messages.reverse(),
       total,
       page: parseInt(page),
       pages: Math.ceil(total / limit),
@@ -46,44 +40,31 @@ const getChatHistory = async (req, res) => {
   }
 };
 
-// Post a new chat message (fallback when socket is not available)
 const postChatMessage = async (req, res) => {
   const { projectId } = req.params;
-  const { content, type = 'user' } = req.body;
+  const { content } = req.body;
 
-  if (!content?.trim()) {
-    return res.status(400).json({ message: 'Message content is required' });
-  }
+  if (!content?.trim()) return res.status(400).json({ message: 'Message required' });
 
   try {
-    // Verify membership
     const membership = await ProjectMember.findOne({
       project: projectId,
       user: req.user._id,
       status: 'active',
     });
 
-    if (!membership) {
-      return res.status(403).json({ message: 'You do not have permission to chat here' });
-    }
+    if (!membership) return res.status(403).json({ message: 'Access denied' });
 
     const message = await ChatMessage.create({
       project: projectId,
       user: req.user._id,
       content: content.trim(),
-      type,
+      type: 'user',
     });
 
     await message.populate('user', 'username avatar');
 
-    // Broadcast via socket (if socket server is accessible)
     req.io?.to(`project-${projectId}`).emit('chat-message', message);
-
-    // Optional: notify mentioned users (simple @username detection)
-    const mentions = content.match(/@(\w+)/g) || [];
-    if (mentions.length > 0) {
-      // Future: find users by username, send notification
-    }
 
     res.status(201).json(message);
   } catch (err) {
@@ -92,12 +73,11 @@ const postChatMessage = async (req, res) => {
   }
 };
 
-// Helper: Send system message (called from other controllers, e.g. merge accept)
 const sendSystemMessage = async (projectId, content) => {
   try {
     const message = await ChatMessage.create({
       project: projectId,
-      user: null, // system
+      user: null,
       content,
       type: 'system',
     });
@@ -105,7 +85,7 @@ const sendSystemMessage = async (projectId, content) => {
     req.io?.to(`project-${projectId}`).emit('chat-message', message);
     return message;
   } catch (err) {
-    console.error('Failed to send system message:', err);
+    console.error('System message error:', err);
   }
 };
 

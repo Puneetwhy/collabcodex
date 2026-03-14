@@ -4,9 +4,9 @@ import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import NotificationBell from './NotificationBell';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, LogOut, Code2 } from 'lucide-react';
+import { Moon, Sun, LogOut, Code2, ChevronRight } from 'lucide-react';
 
-const Header = ({ projectName = '' }) => {
+const Header = ({ projectName = '', unreadNotifications = 0 }) => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -23,7 +23,7 @@ const Header = ({ projectName = '' }) => {
           {/* Logo */}
           <div
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 cursor-pointer group select-none"
+            className="flex items-center gap-2 cursor-pointer group select-none transition-transform hover:scale-105"
           >
             <div className="flex items-center justify-center h-9 w-9 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
               <Code2 className="h-5 w-5 text-primary" />
@@ -33,10 +33,10 @@ const Header = ({ projectName = '' }) => {
             </span>
           </div>
 
-          {/* Project Name */}
+          {/* Project Name with breadcrumb */}
           {isProjectPage && projectName && (
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-muted-foreground text-sm hidden sm:inline">/</span>
+            <div className="flex items-center gap-1 min-w-0">
+              <ChevronRight className="h-4 w-4 text-muted-foreground hidden sm:inline" />
               <span className="font-medium text-sm sm:text-base truncate max-w-[140px] sm:max-w-[220px] lg:max-w-[320px]">
                 {projectName}
               </span>
@@ -46,24 +46,24 @@ const Header = ({ projectName = '' }) => {
 
         {/* Right Section */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Theme Toggle */}
+          {/* Theme Toggle with smooth rotation */}
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleTheme}
             aria-label="Toggle theme"
-            className="rounded-xl hover:bg-muted transition-colors"
+            className="rounded-xl hover:bg-muted transition-all duration-300 transform"
           >
-            {theme === 'dark' ? (
-              <Sun className="h-5 w-5" />
-            ) : (
-              <Moon className="h-5 w-5" />
-            )}
+            {theme === 'dark' ? <Sun className="h-5 w-5 rotate-0 transition-transform duration-300" /> 
+                               : <Moon className="h-5 w-5 rotate-12 transition-transform duration-300" />}
           </Button>
 
-          {/* Notifications */}
+          {/* Notifications with red dot if unread */}
           <div className="relative">
             <NotificationBell />
+            {unreadNotifications > 0 && (
+              <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-1 ring-background" />
+            )}
           </div>
 
           {/* Logout */}

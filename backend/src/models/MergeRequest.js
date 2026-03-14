@@ -28,11 +28,11 @@ const mergeRequestSchema = new mongoose.Schema({
     default: 'open',
   },
   diff: {
-    type: String, // JSON stringified diff (or store full before/after maps)
+    type: String,
     required: true,
   },
   filesChanged: {
-    type: [String], // list of changed file paths
+    type: [String],
   },
   reviewers: [{
     type: mongoose.Schema.Types.ObjectId,

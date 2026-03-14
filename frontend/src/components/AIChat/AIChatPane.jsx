@@ -1,3 +1,4 @@
+// frontend/src/components/Editor/AIChatPane.jsx
 import { useState, useRef, useEffect } from 'react';
 import { Send, Code, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,13 +8,14 @@ import { cn } from '@/lib/utils';
 import { useTheme } from '@/hooks/useTheme';
 import { toast } from 'sonner';
 
-const AI_ENDPOINT = '/api/ai/chat'; // Vite proxy → localhost:5000
+const AI_ENDPOINT = '/api/ai/chat';
 
 const AIChatPane = ({ selectedCode = '', onInsertCode }) => {
   const [messages, setMessages] = useState([
     {
       role: 'system',
-      content: 'You are an expert coding assistant in CollabCodeX. Be concise, helpful, and accurate.',
+      content:
+        'You are an expert coding assistant in CollabCodeX. Be concise, helpful, and accurate.',
     },
   ]);
   const [input, setInput] = useState('');
@@ -24,9 +26,7 @@ const AIChatPane = ({ selectedCode = '', onInsertCode }) => {
   const { theme } = useTheme();
 
   const scrollToBottom = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   };
 
   useEffect(() => scrollToBottom(), [messages]);
@@ -52,7 +52,7 @@ const AIChatPane = ({ selectedCode = '', onInsertCode }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           messages: newMessages,
@@ -70,7 +70,7 @@ const AIChatPane = ({ selectedCode = '', onInsertCode }) => {
       let aiResponse = '';
 
       const assistantMsg = { role: 'assistant', content: '' };
-      setMessages(prev => [...prev, assistantMsg]);
+      setMessages((prev) => [...prev, assistantMsg]);
 
       while (true) {
         const { done, value } = await reader.read();
@@ -89,7 +89,7 @@ const AIChatPane = ({ selectedCode = '', onInsertCode }) => {
               const token = parsed.choices?.[0]?.delta?.content || '';
               if (token) {
                 aiResponse += token;
-                setMessages(prev => {
+                setMessages((prev) => {
                   const updated = [...prev];
                   updated[updated.length - 1].content = aiResponse;
                   return updated;
@@ -122,7 +122,10 @@ const AIChatPane = ({ selectedCode = '', onInsertCode }) => {
       <ScrollArea ref={scrollRef} className="flex-1 px-4 sm:px-6 py-5">
         <div className="space-y-5 sm:space-y-6">
           {messages.slice(1).map((msg, idx) => (
-            <div key={idx} className={cn('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
+            <div
+              key={idx}
+              className={cn('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}
+            >
               <div
                 className={cn(
                   'w-fit max-w-[92%] sm:max-w-[80%] lg:max-w-[70%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm break-words',

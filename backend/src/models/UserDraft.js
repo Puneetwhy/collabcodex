@@ -16,14 +16,13 @@ const userDraftSchema = new mongoose.Schema({
   },
   files: {
     type: Map,
-    of: String, // path -> content (user's personal working copy)
+    of: String,
     default: () => new Map(),
   },
   lastSyncedAt: {
     type: Date,
     default: Date.now,
   },
-  // Optional: track base version this draft is from
   baseVersion: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'ProjectVersion',

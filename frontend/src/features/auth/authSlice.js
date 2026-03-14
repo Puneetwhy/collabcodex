@@ -1,6 +1,6 @@
 // frontend/src/features/auth/authSlice.js
 import { createSlice } from '@reduxjs/toolkit';
-import { authApi } from './authApi'; // we'll create this next if not already
+import { authApi } from './authApi';
 
 const initialState = {
   user: null,
@@ -17,25 +17,35 @@ const authSlice = createSlice({
       localStorage.removeItem('token');
     },
     setCredentials: (state, action) => {
-      state.user = action.payload.user;
-      state.token = action.payload.token;
-      localStorage.setItem('token', action.payload.token);
+      const { user, token } = action.payload;
+      state.user = user;
+      state.token = token;
+      if (token) localStorage.setItem('token', token);
     },
   },
   extraReducers: (builder) => {
     builder
-      .addMatcher(authApi.endpoints.login.matchFulfilled, (state, action) => {
-        state.user = action.payload;
-        state.token = action.payload.token;
-        localStorage.setItem('token', action.payload.token);
+      // Login
+      .addMatcher(authApi.endpoints.login.matchFulfilled, (state, { payload }) => {
+        state.user = payload;
+        state.token = payload.token;
+        if (payload.token) localStorage.setItem('token', payload.token);
       })
-      .addMatcher(authApi.endpoints.signup.matchFulfilled, (state, action) => {
-        state.user = action.payload;
-        state.token = action.payload.token;
-        localStorage.setItem('token', action.payload.token);
+      // Signup
+      .addMatcher(authApi.endpoints.signup.matchFulfilled, (state, { payload }) => {
+        state.user = payload;
+        state.token = payload.token;
+        if (payload.token) localStorage.setItem('token', payload.token);
       })
-      .addMatcher(authApi.endpoints.getMe.matchFulfilled, (state, action) => {
-        state.user = action.payload;
+      // Fetch current user
+      .addMatcher(authApi.endpoints.getMe.matchFulfilled, (state, { payload }) => {
+        state.user = payload;
+      })
+      // Optional: handle getMe rejected (e.g., token expired)
+      .addMatcher(authApi.endpoints.getMe.matchRejected, (state) => {
+        state.user = null;
+        state.token = null;
+        localStorage.removeItem('token');
       });
   },
 });

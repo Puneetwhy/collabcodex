@@ -23,7 +23,6 @@ import { toast } from 'sonner';
 const NotificationBell = () => {
   const { socket } = useSocket();
 
-  // Fetch notifications
   const { data, isLoading } = useGetNotificationsQuery();
   const notifications = Array.isArray(data)
     ? data
@@ -31,19 +30,18 @@ const NotificationBell = () => {
 
   const [markAsRead] = useMarkAsReadMutation();
 
-  // Count unread notifications
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
     [notifications]
   );
 
-  // Listen for real-time notifications via socket
   useEffect(() => {
     if (!socket) return;
 
     const handleNotif = (newNotif) => {
       toast.info(newNotif.message, { description: 'New notification' });
-      // Optional: refetch notifications if your API supports it
+      // Optional: play a sound for real-time alert
+      // new Audio('/notification.mp3').play();
     };
 
     socket.on('notification', handleNotif);
@@ -65,12 +63,16 @@ const NotificationBell = () => {
           variant="ghost"
           size="icon"
           className="relative rounded-xl hover:bg-muted transition-colors"
+          aria-label="Notifications"
         >
           <Bell size={18} />
           {unreadCount > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full text-[10px] flex items-center justify-center shadow-sm"
+              className={cn(
+                'absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full text-[10px] flex items-center justify-center shadow-sm transition-transform duration-150',
+                'animate-pulse'
+              )}
             >
               {unreadCount > 9 ? '9+' : unreadCount}
             </Badge>
@@ -104,7 +106,7 @@ const NotificationBell = () => {
                 className={cn(
                   'flex flex-col items-start gap-1 px-4 py-3 cursor-pointer transition-colors',
                   'focus:bg-muted hover:bg-muted',
-                  !notif.read && 'bg-accent/40'
+                  !notif.read && 'bg-accent/20 border-l-2 border-accent/60'
                 )}
                 onClick={() => {
                   if (!notif.read) handleMarkRead(notif._id);

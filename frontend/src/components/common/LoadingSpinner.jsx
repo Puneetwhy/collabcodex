@@ -3,13 +3,17 @@ import { Loader2 } from 'lucide-react';
 
 const LoadingSpinner = ({ fullPage = false, message = 'Loading...' }) => {
   const content = (
-    <div className="flex flex-col items-center justify-center gap-5 text-center">
+    <div
+      className="flex flex-col items-center justify-center gap-5 text-center"
+      role="status"
+      aria-live="polite"
+    >
       {/* Spinner container */}
       <div className="relative flex items-center justify-center">
-        {/* Glowing background circle */}
-        <div className="absolute h-16 w-16 rounded-full bg-primary/10 blur-xl" />
+        {/* Glowing background circle with pulse */}
+        <div className="absolute h-16 w-16 rounded-full bg-primary/10 blur-xl animate-pulse" />
         {/* Spinner icon */}
-        <Loader2 className="relative h-10 w-10 animate-spin text-primary" />
+        <Loader2 className="relative h-10 w-10 sm:h-12 sm:w-12 animate-spin text-primary" />
       </div>
 
       {/* Message */}
@@ -29,11 +33,7 @@ const LoadingSpinner = ({ fullPage = false, message = 'Loading...' }) => {
   }
 
   // Inline / partial spinner
-  return (
-    <div className="py-10 flex items-center justify-center">
-      {content}
-    </div>
-  );
+  return <div className="py-10 flex items-center justify-center">{content}</div>;
 };
 
 export default LoadingSpinner;

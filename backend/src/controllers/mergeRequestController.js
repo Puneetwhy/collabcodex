@@ -4,10 +4,8 @@ const UserDraft = require('../models/UserDraft');
 const MergeRequest = require('../models/MergeRequest');
 const ProjectVersion = require('../models/ProjectVersion');
 const Notification = require('../models/Notification');
-const { io } = require('../socket/events'); // assuming io is exported or accessible
-const diff = require('diff'); // npm install diff --save
+const diff = require('diff');
 
-// Push draft changes → create pending MergeRequest
 const pushDraft = async (req, res) => {
   const { projectId, title = 'Untitled Push', description = '' } = req.body;
 
@@ -18,7 +16,6 @@ const pushDraft = async (req, res) => {
     const draft = await UserDraft.findOne({ user: req.user._id, project: projectId });
     if (!draft) return res.status(404).json({ message: 'No draft found' });
 
-    // Generate simple diff (per file)
     let changes = [];
     let diffString = '';
 
@@ -28,14 +25,10 @@ const pushDraft = async (req, res) => {
       diffString += fileDiff + '\n\n';
 
       const linesChanged = fileDiff.split('\n').filter(l => l.startsWith('+') || l.startsWith('-')).length;
-      if (linesChanged > 0) {
-        changes.push({ path, linesChanged });
-      }
+      if (linesChanged > 0) changes.push({ path, linesChanged });
     }
 
-    if (changes.length === 0) {
-      return res.status(400).json({ message: 'No changes to push' });
-    }
+    if (changes.length === 0) return res.status(400).json({ message: 'No changes to push' });
 
     const mergeRequest = await MergeRequest.create({
       project: projectId,
@@ -47,7 +40,6 @@ const pushDraft = async (req, res) => {
       status: 'open',
     });
 
-    // Notify owner & editors
     const members = await ProjectMember.find({
       project: projectId,
       role: { $in: ['owner', 'editor'] },
@@ -63,21 +55,18 @@ const pushDraft = async (req, res) => {
         fromUser: req.user._id,
         message: `${req.user.username} pushed changes: "${title}"`,
         link: `/projects/${projectId}/merge-requests/${mergeRequest._id}`,
-        data: { mergeRequestId: mergeRequest._id },
       });
     }
 
-    // Broadcast to project room
-    io.to(`project-${projectId}`).emit('merge-request-created', mergeRequest);
+    req.io?.to(`project-${projectId}`).emit('merge-request-created', mergeRequest);
 
     res.status(201).json(mergeRequest);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Error pushing changes' });
+    res.status(500).json({ message: 'Push failed' });
   }
 };
 
-// Accept merge request → merge to main, create version, rebase draft, notify
 const acceptMerge = async (req, res) => {
   const { projectId, mrId } = req.params;
 
@@ -87,106 +76,75 @@ const acceptMerge = async (req, res) => {
       return res.status(404).json({ message: 'Merge request not found' });
     }
 
-    if (mergeRequest.status !== 'open') {
-      return res.status(400).json({ message: 'Merge request already processed' });
-    }
-
     const project = await Project.findById(projectId);
     const draft = await UserDraft.findOne({ user: mergeRequest.author, project: projectId });
 
-    // Merge files to main
-    for (const [path, content] of draft.files) {
-      project.mainFiles.set(path, content);
-    }
+    project.mainFiles = new Map(draft.files);
+    await project.save();
 
-    // Create version snapshot
-    const versionNumber = (await ProjectVersion.countDocuments({ project: projectId })) + 1;
-    await ProjectVersion.create({
+    const version = await ProjectVersion.create({
       project: projectId,
-      versionNumber,
       files: new Map(project.mainFiles),
       committedBy: req.user._id,
       message: mergeRequest.title,
       mergeRequest: mergeRequest._id,
     });
 
-    await project.save();
-
-    // Rebase draft (reset to new main)
     draft.files = new Map(project.mainFiles);
-    draft.baseVersion = mergeRequest._id; // optional tracking
     await draft.save();
 
     mergeRequest.status = 'merged';
     mergeRequest.mergedAt = new Date();
-    mergeRequest.approvedBy.push(req.user._id);
+    mergeRequest.approvedBy = [req.user._id];
     await mergeRequest.save();
 
-    // Notify author & room
     await Notification.create({
       user: mergeRequest.author,
       type: 'merge_accepted',
       project: projectId,
       fromUser: req.user._id,
-      message: `Your push "${mergeRequest.title}" was accepted and merged`,
+      message: `Your push "${mergeRequest.title}" was accepted`,
       link: `/projects/${projectId}`,
     });
 
-    io.to(`project-${projectId}`).emit('merge-accepted', {
-      mergeRequestId: mrId,
-      mergedBy: req.user.username,
-    });
+    req.io?.to(`project-${projectId}`).emit('merge-accepted', { mergeRequestId: mrId });
 
-    // Optional: system chat message
-    io.to(`project-${projectId}`).emit('chat-message', {
-      type: 'system',
-      content: `Changes from ${mergeRequest.title} merged into Main by ${req.user.username}`,
-    });
-
-    res.json({ message: 'Merged successfully', mergeRequest });
+    res.json({ message: 'Merged', mergeRequest });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Error accepting merge' });
+    res.status(500).json({ message: 'Merge failed' });
   }
 };
 
-// Reject merge request
 const rejectMerge = async (req, res) => {
   const { projectId, mrId } = req.params;
 
   try {
     const mergeRequest = await MergeRequest.findById(mrId);
-    if (!mergeRequest || mergeRequest.project.toString() !== projectId) {
-      return res.status(404).json({ message: 'Merge request not found' });
-    }
+    if (!mergeRequest || mergeRequest.project.toString() !== projectId) return res.status(404).json({ message: 'Not found' });
 
-    if (mergeRequest.status !== 'open') {
-      return res.status(400).json({ message: 'Merge request already processed' });
-    }
+    if (mergeRequest.status !== 'open') return res.status(400).json({ message: 'Already processed' });
 
     mergeRequest.status = 'closed';
     mergeRequest.closedAt = new Date();
     await mergeRequest.save();
 
-    // Notify author
     await Notification.create({
       user: mergeRequest.author,
       type: 'merge_rejected',
       project: projectId,
       fromUser: req.user._id,
       message: `Your push "${mergeRequest.title}" was rejected`,
-      link: `/projects/${projectId}/merge-requests/${mrId}`,
     });
 
-    io.to(`project-${projectId}`).emit('merge-rejected', { mergeRequestId: mrId });
+    req.io?.to(`project-${projectId}`).emit('merge-rejected', { mergeRequestId: mrId });
 
-    res.json({ message: 'Merge request rejected' });
+    res.json({ message: 'Rejected' });
   } catch (err) {
-    res.status(500).json({ message: 'Error rejecting merge' });
+    res.status(500).json({ message: 'Reject failed' });
   }
 };
 
-// List merge requests for project
 const getMergeRequests = async (req, res) => {
   const { projectId } = req.params;
 
@@ -197,7 +155,7 @@ const getMergeRequests = async (req, res) => {
 
     res.json(mrs);
   } catch (err) {
-    res.status(500).json({ message: 'Error fetching merge requests' });
+    res.status(500).json({ message: 'Fetch failed' });
   }
 };
 

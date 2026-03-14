@@ -4,172 +4,125 @@ const docker = new Docker();
 const Project = require('../models/Project');
 const UserDraft = require('../models/UserDraft');
 const DockerService = require('../services/dockerService');
-const { protect, requireRole } = require('../middlewares/authMiddleware');
-const { isEditor } = require('../middlewares/roleMiddleware');
 
-const EXEC_TIMEOUT_MS = 8000; // 8 seconds
-const CONTAINER_PREFIX = 'exec-'; // temp execution containers
+const EXEC_TIMEOUT_MS = 8000;
 
-// Helper: Detect language from files or project setting
 function detectLanguage(filesMap, projectLanguage) {
   if (projectLanguage && projectLanguage !== 'other') return projectLanguage;
 
-  const fileKeys = Array.from(filesMap.keys());
-  if (fileKeys.some(f => f.endsWith('.js') || f.endsWith('.ts'))) return 'nodejs';
-  if (fileKeys.some(f => f.endsWith('.py'))) return 'python';
-  if (fileKeys.some(f => f.endsWith('.java'))) return 'java';
-  return 'nodejs'; // default
+  const keys = Array.from(filesMap.keys());
+  if (keys.some(f => f.endsWith('.js') || f.endsWith('.ts'))) return 'nodejs';
+  if (keys.some(f => f.endsWith('.py'))) return 'python';
+  if (keys.some(f => f.endsWith('.java'))) return 'java';
+  return 'nodejs';
 }
 
-// Helper: Create temp execution container with snapshot files
 async function createExecContainer(projectId, filesMap, language) {
-  const tempContainerName = `${CONTAINER_PREFIX}${projectId}-${Date.now()}`;
+  const name = `exec-${projectId}-${Date.now()}`;
+  const volume = `temp-vol-${Date.now()}`;
 
-  // Use same image as persistent one
-  const image = DockerService['LANGUAGE_IMAGES'][language] || 'node:22-alpine';
+  await docker.createVolume({ Name: volume });
 
-  // Create temp volume for this run (no persistence needed)
-  const tempVolumeName = `temp-exec-vol-${Date.now()}`;
-
-  await docker.createVolume({ Name: tempVolumeName });
+  const image = DockerService.LANGUAGE_IMAGES[language] || 'node:22-alpine';
 
   const container = await docker.createContainer({
     Image: image,
-    name: tempContainerName,
-    Tty: false,
-    OpenStdin: false,
+    name,
     WorkingDir: '/workspace',
-    Cmd: ['/bin/sh', '-c', 'sleep infinity'], // keep alive for execs
+    Cmd: ['/bin/sh', '-c', 'sleep infinity'],
     Volumes: { '/workspace': {} },
     HostConfig: {
-      Binds: [`${tempVolumeName}:/workspace`],
+      Binds: [`${volume}:/workspace`],
       Memory: 512 * 1024 * 1024,
       NanoCpus: 500_000_000,
-      AutoRemove: true, // auto-remove on stop
+      AutoRemove: true,
     },
   });
 
   await container.start();
 
-  // Copy files into volume (docker cp style via putArchive - simplified here)
-  // In production, use tar-stream + putArchive for real file copy
-  // For MVP: exec commands to echo > file (slow but works for small projects)
+  // Real file copy using tar-stream (much better than echo)
+  const tarStream = require('tar-stream');
+  const pack = tarStream.pack();
+
   for (const [path, content] of filesMap) {
-    const dir = path.substring(0, path.lastIndexOf('/'));
-    if (dir) {
-      await container.exec({ Cmd: ['mkdir', '-p', `/workspace/${dir}`] }).start();
-    }
-    await container.exec({
-      Cmd: ['sh', '-c', `echo ${JSON.stringify(content)} > /workspace/${path}`],
-    }).start();
+    pack.entry({ name: path }, content);
   }
 
-  return { container, tempVolumeName };
+  pack.finalize();
+
+  await container.putArchive(pack, { path: '/workspace' });
+
+  return { container, volume };
 }
 
-// Helper: Parse output for dev server URL (e.g. Vite, Flask, etc.)
 function extractPreviewUrl(output) {
-  const urlRegex = /(http:\/\/localhost:\d+|http:\/\/0\.0\.0\.0:\d+|http:\/\/127\.0\.0\.1:\d+)/g;
-  const matches = output.match(urlRegex);
-  return matches ? matches[0] : null;
+  const match = output.match(/(http:\/\/(?:localhost|0\.0\.0\.0|127\.0\.0\.1):(\d+))/);
+  return match ? match[1].replace('0.0.0.0', 'localhost').replace('127.0.0.1', 'localhost') : null;
 }
 
 const runCode = async (req, res) => {
-  const { projectId, mode = 'main' } = req.body; // mode: 'main' | 'draft'
+  const { projectId, mode = 'draft' } = req.body;
 
   try {
     const project = await Project.findById(projectId);
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
-    let filesMap;
-    let language = project.language;
+    const filesMap = mode === 'draft'
+      ? (await UserDraft.findOne({ user: req.user._id, project: projectId }))?.files || new Map()
+      : project.mainFiles;
 
-    if (mode === 'draft') {
-      const draft = await UserDraft.findOne({ user: req.user._id, project: projectId });
-      if (!draft) return res.status(404).json({ message: 'No draft found' });
-      filesMap = draft.files;
-      language = detectLanguage(filesMap, language);
-    } else {
-      filesMap = project.mainFiles;
-      language = detectLanguage(filesMap, language);
-    }
+    if (filesMap.size === 0) return res.status(400).json({ message: 'No files' });
 
-    if (filesMap.size === 0) {
-      return res.status(400).json({ message: 'No files to execute' });
-    }
+    const language = detectLanguage(filesMap, project.language);
+    const { container, volume } = await createExecContainer(projectId, filesMap, language);
 
-    const { container, tempVolumeName } = await createExecContainer(projectId, filesMap, language);
-
-    // Timeout killer
     const timeoutId = setTimeout(async () => {
-      try {
-        await container.stop({ t: 2 });
-        await container.remove({ force: true });
-      } catch {}
-      res.status(408).json({ message: 'Execution timeout (8s)' });
+      await container.stop({ t: 2 }).catch(() => {});
+      await container.remove({ force: true }).catch(() => {});
+      res.status(408).json({ message: 'Timeout' });
     }, EXEC_TIMEOUT_MS);
 
-    // Determine run command based on language & common patterns
-    let runCmd;
-    if (language === 'nodejs') {
-      runCmd = ['npm', 'run', 'dev']; // assume package.json has it
-      // Fallback: node index.js or similar
-    } else if (language === 'python') {
-      runCmd = ['python', 'app.py']; // common Flask/FastAPI entry
-    } else if (language === 'java') {
-      runCmd = ['java', 'Main']; // assume compiled or use javac first
-    } else {
-      runCmd = ['echo', 'No run command defined for this language'];
-    }
+    let output = '';
+    let previewUrl = null;
 
-    // Execute run command
+    const runCmd = language === 'nodejs' ? ['npm', 'run', 'dev'] :
+                   language === 'python' ? ['python', 'app.py'] :
+                   language === 'java' ? ['java', 'Main'] :
+                   ['echo', 'No run command'];
+
     const exec = await container.exec({
       Cmd: runCmd,
       AttachStdout: true,
       AttachStderr: true,
       Tty: false,
-      WorkingDir: '/workspace',
     });
 
     const stream = await exec.start();
-    let output = '';
-    let previewUrl = null;
 
-    stream.on('data', (chunk) => {
+    stream.on('data', chunk => {
       const str = chunk.toString();
       output += str;
-
-      // Real-time parse for preview URL
-      const detected = extractPreviewUrl(str);
-      if (detected && !previewUrl) {
-        previewUrl = detected.replace('0.0.0.0', 'localhost').replace('127.0.0.1', 'localhost');
-      }
+      const url = extractPreviewUrl(str);
+      if (url && !previewUrl) previewUrl = url;
     });
 
     stream.on('end', async () => {
       clearTimeout(timeoutId);
-      try {
-        await container.stop({ t: 2 });
-        await container.remove({ force: true });
-        await docker.getVolume(tempVolumeName).remove({ force: true });
-      } catch {}
+      await container.stop({ t: 2 }).catch(() => {});
+      await container.remove({ force: true }).catch(() => {});
+      await docker.getVolume(volume).remove({ force: true }).catch(() => {});
 
-      res.json({
-        success: true,
-        output,
-        previewUrl,
-        language,
-      });
+      res.json({ success: true, output, previewUrl, language });
     });
 
-    stream.on('error', (err) => {
+    stream.on('error', err => {
       clearTimeout(timeoutId);
       res.status(500).json({ message: 'Execution error', error: err.message });
     });
-
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server error during execution', error: err.message });
+    res.status(500).json({ message: 'Execution failed', error: err.message });
   }
 };
 

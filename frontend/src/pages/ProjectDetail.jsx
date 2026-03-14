@@ -10,9 +10,8 @@ import TerminalPane from '@/components/Terminal/TerminalPane';
 import AIChatPane from '@/components/AIChat/AIChatPane';
 import ProjectChat from '@/components/Chat/ProjectChat';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Play, Upload, Users, Code2, MessageCircle } from 'lucide-react';
+import { Play, Upload, Users, Code2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -22,6 +21,7 @@ const ProjectDetail = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const { socket, onlineUsers } = useSocket(projectId);
+
   const [project, setProject] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -34,14 +34,14 @@ const ProjectDetail = () => {
   const [isAIWindowOpen, setAIWindowOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-  // Resize listener
+  /** Handle window resize for responsive layout */
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch project data
+  /** Fetch project data */
   useEffect(() => {
     const fetchProject = async () => {
       try {
@@ -53,17 +53,16 @@ const ProjectDetail = () => {
         });
 
         setProject(res.data);
-        setIsLoading(false);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load project');
+      } finally {
         setIsLoading(false);
       }
     };
-
     fetchProject();
   }, [projectId]);
 
-  // Initialize files once project loads
+  /** Initialize files when project loads */
   useEffect(() => {
     if (!project) return;
 
@@ -71,7 +70,6 @@ const ProjectDetail = () => {
       ? project.mainFiles
       : new Map(Object.entries(project.mainFiles || {}));
 
-    // Add defaults if empty
     if (initialFiles.size === 0) {
       initialFiles.set('index.js', '// Welcome to CollabCodeX\nconsole.log("Hello World! 🚀");');
       initialFiles.set('README.md', '# Welcome to your CollabCodeX project\n\nStart coding!');
@@ -79,29 +77,27 @@ const ProjectDetail = () => {
 
     setDraftFiles(initialFiles);
 
-    // Prefer non-README file
     const files = Array.from(initialFiles.keys());
     const preferred = files.find(f => f !== 'README.md' && /\.(js|ts|py|java|jsx)$/.test(f)) || files[0];
-    const active = preferred || 'index.js';
-    setActiveFile(active);
-    setCurrentContent(initialFiles.get(active) || '');
+    setActiveFile(preferred || 'index.js');
+    setCurrentContent(initialFiles.get(preferred || 'index.js') || '');
   }, [project]);
 
-  // Update content when active file changes
+  /** Update editor content when active file changes */
   useEffect(() => {
-    if (!draftFiles.size || !activeFile) return;
+    if (!activeFile) return;
     setCurrentContent(draftFiles.get(activeFile) || '');
   }, [activeFile, draftFiles]);
 
-  // Real-time draft sync via socket
+  /** Real-time draft sync via socket */
   useEffect(() => {
     if (!socket || !projectId) return;
 
     socket.emit('join-project', { projectId });
 
     socket.on('draft-update', ({ files }) => {
-      setDraftFiles(new Map(Object.entries(files)));
-      // If active file was removed, switch to first
+      const updated = new Map(Object.entries(files));
+      setDraftFiles(updated);
       if (!files[activeFile]) {
         const first = Object.keys(files)[0] || 'index.js';
         setActiveFile(first);
@@ -147,6 +143,7 @@ const ProjectDetail = () => {
     socket?.emit('push-draft', { projectId });
   };
 
+  /** Loading or error states */
   if (isLoading) return (
     <div className="h-screen flex items-center justify-center bg-background">
       <Skeleton className="h-12 w-64 rounded-lg" />
@@ -156,12 +153,15 @@ const ProjectDetail = () => {
   if (error || !project) return (
     <div className="h-screen flex flex-col items-center justify-center bg-background text-destructive">
       <h1 className="text-2xl font-bold">Project not found</h1>
-      <Button onClick={() => navigate('/dashboard')} className="mt-4">Back to Dashboard</Button>
+      <Button onClick={() => navigate('/dashboard')} className="mt-4">
+        Back to Dashboard
+      </Button>
     </div>
   );
 
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
+
       {/* Top Bar */}
       <header className="h-14 border-b border-border flex items-center px-4 justify-between shrink-0 bg-background/80 backdrop-blur-sm">
         <div className="flex items-center gap-4 min-w-0">
@@ -176,28 +176,24 @@ const ProjectDetail = () => {
           <Button variant="outline" size="sm" onClick={() => handleRun('main')} className="flex items-center gap-1">
             <Play size={16} /> Run Main
           </Button>
-          <Button size="sm" onClick={() => handleRun('draft')}>
-            Run Draft
-          </Button>
+          <Button size="sm" onClick={() => handleRun('draft')}>Run Draft</Button>
           <Button size="sm" onClick={handlePush} className="flex items-center gap-1">
             <Upload size={16} /> Push
           </Button>
-          <Button size="sm" onClick={() => setAIWindowOpen(true)}>
-            AI Chat
-          </Button>
+          <Button size="sm" onClick={() => setAIWindowOpen(true)}>AI Chat</Button>
         </div>
       </header>
 
-      {/* Main Panels */}
+      {/* Panels */}
       <PanelGroup
         direction={isMobile ? 'vertical' : 'horizontal'}
         className="flex-1 overflow-hidden"
         autoSaveId="project-detail-layout"
       >
-        {/* Left: File Tree + Editor */}
-        <Panel defaultSize={50} minSize={30} order={1}>
+        {/* FileTree + Editor */}
+        <Panel defaultSize={50} minSize={30}>
           <PanelGroup direction="vertical">
-            <Panel defaultSize={20} minSize={15} order={1}>
+            <Panel defaultSize={20} minSize={15}>
               <FileTree
                 files={draftFiles}
                 onFileSelect={setActiveFile}
@@ -206,12 +202,12 @@ const ProjectDetail = () => {
               />
             </Panel>
             <PanelResizeHandle className="h-1 bg-border hover:bg-primary/30 transition-colors" />
-            <Panel defaultSize={80} minSize={40} order={2}>
+            <Panel defaultSize={80} minSize={40}>
               <MonacoWrapper
                 value={currentContent}
                 onChange={handleEditorChange}
                 path={activeFile}
-                language={project.language || 'javascript'}
+                language={project.language?.toLowerCase() || 'javascript'}
                 theme={theme}
                 onSelect={selection => setSelectedCode(selection?.text || '')}
               />
@@ -221,11 +217,11 @@ const ProjectDetail = () => {
 
         <PanelResizeHandle className={isMobile ? "h-1 bg-border" : "w-1 bg-border"} />
 
-        {/* Right: Preview + Terminal + Chat */}
-        <Panel defaultSize={50} minSize={30} order={2}>
+        {/* Preview + Terminal + Chat */}
+        <Panel defaultSize={50} minSize={30}>
           <PanelGroup direction="vertical">
             {/* Preview */}
-            <Panel defaultSize={40} minSize={20} order={1}>
+            <Panel defaultSize={40} minSize={20}>
               <div className="h-full flex flex-col bg-card rounded-md overflow-hidden">
                 <div className="p-2 border-b border-border font-medium flex items-center gap-2">
                   <Code2 size={16} /> Live Preview
@@ -248,17 +244,15 @@ const ProjectDetail = () => {
             <PanelResizeHandle className="h-1 bg-border hover:bg-primary/30 transition-colors" />
 
             {/* Terminal */}
-            <Panel defaultSize={30} minSize={20} order={2}>
+            <Panel defaultSize={30} minSize={20}>
               <TerminalPane projectId={projectId} />
             </Panel>
 
             <PanelResizeHandle className="h-1 bg-border hover:bg-primary/30 transition-colors" />
 
             {/* Project Chat */}
-            <Panel defaultSize={30} minSize={20} order={3}>
-              <div className="h-full flex flex-col bg-card/50 rounded-md">
-                <ProjectChat projectId={projectId} />
-              </div>
+            <Panel defaultSize={30} minSize={20}>
+              <ProjectChat projectId={projectId} />
             </Panel>
           </PanelGroup>
         </Panel>
